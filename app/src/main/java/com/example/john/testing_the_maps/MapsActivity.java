@@ -1,7 +1,9 @@
 package com.example.john.testing_the_maps;
 
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.view.View;
+import android.widget.Button;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -44,6 +46,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        boolean marksVisibility;
         places.add(new LatLng(37.994129, 23.731960));
         places.add(new LatLng(37.9757, 23.7339));
         int i = 1;
@@ -53,10 +56,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             options.snippet("test");
             markers.add(mMap.addMarker(options));
         }
+        marksVisibility = true;
+        
 
         LatLng focus_point = options.getPosition();
         mMap.moveCamera(CameraUpdateFactory.newLatLng(focus_point));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(10), 2000, null);
+        //how much to zoom, speed
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(14.5f), 2000, null);
+
+        final Button btn = (Button) findViewById(R.id.btnToggleHide);
+
+        btn.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view){
+                for(Marker marker: markers){
+                    marker.setVisible(!marker.isVisible());
+                }
+
+            }
+        });
 
         // Add a marker in Sydney and move the camera
         /*LatLng sydney = new LatLng(-34, 151);
