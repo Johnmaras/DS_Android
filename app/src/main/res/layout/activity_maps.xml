@@ -18,7 +18,21 @@
         android:id="@+id/btnToggleHide"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"/>
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/btnGetDirections"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true" />
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="24dp"
+        android:clickable="true"
+        map:backgroundTint="@color/colorPrimaryDark"
+        map:rippleColor="@color/colorAccent"
+        map:srcCompat="@drawable/ic_directions_white_36px" />
+<!-- FIXME: fix this^ error -->
 
 </RelativeLayout>
