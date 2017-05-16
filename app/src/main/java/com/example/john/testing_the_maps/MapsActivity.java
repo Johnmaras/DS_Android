@@ -4,6 +4,8 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -21,7 +23,9 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.ArrayList;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+
+//TODO listen for gps state changes and hide/reveal the my location marker accordingly
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
 
     private GoogleMap mMap;
     private MarkerOptions options = new MarkerOptions();
@@ -38,8 +42,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        /*this.getApplicationContext()
+                .getContentResolver()
+                .registerContentObserver(
+                        Settings.Secure.CONTENT_URI, true, );*/
     }
 
+    @Override
+    protected void onResume() {
+        //registerReceiver( myLocationListener(), new IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION));
+        super.onResume();
+    }
+
+    @Override
+    protected void onDestroy() {
+        //unregisterReceiver(mGpsSwitchStateReceiver);
+        super.onDestroy();
+    }
 
     /**
      * Manipulates the map once available.
@@ -53,7 +72,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
+        mMap.setMyLocationEnabled(true);
         mMap.getUiSettings().setMapToolbarEnabled(false);
+        mMap.getUiSettings().setMyLocationButtonEnabled(false);
+
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -81,8 +104,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .show();
             return;
         }
-        //mMap.setMyLocationEnabled(true);
-        //mMap.getUiSettings().setMyLocationButtonEnabled(true);
 
         /*mMap.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
             @Override
@@ -91,6 +112,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 return false;
             }
         });*/
+
+        /*new LocationSource.OnLocationChangedListener(){
+            @Override
+            public void onLocationChanged(Location location) {
+                if(Settings.Secure.LOCATION_MODE.equals(Integer.toString(Settings.Secure.LOCATION_MODE_OFF))){
+                    Toast.makeText(MapsActivity.this, "Location setting changed", Toast.LENGTH_SHORT).show();
+                }
+            }
+        };*/
+
+
 
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
@@ -147,10 +179,42 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             }
         });
-
-        // Add a marker in Sydney and move the camera
-        /*LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));*/
     }
+
+    /*private BroadcastReceiver mGpsSwitchStateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent){
+            Toast.makeText(MapsActivity.this, intent.getAction(), Toast.LENGTH_SHORT).show();
+            *//*if(intent.getAction().matches("android.location.PROVIDERS_CHANGED")){
+                if(Settings.Secure.LOCATION_MODE.equals(Integer.toString(Settings.Secure.LOCATION_MODE_OFF))){
+                    Toast.makeText(MapsActivity.this, "Location setting changed", Toast.LENGTH_SHORT).show();
+                }
+            }*//*
+        }
+    };*/
+
+    private LocationListener myLocationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+
+        }
+
+        @Override
+        public void onStatusChanged(String s, int i, Bundle bundle) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String s) {
+            Toast.makeText(MapsActivity.this, "GPS Enabled", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        public void onProviderDisabled(String s) {
+            Toast.makeText(MapsActivity.this, "GPS Disabled", Toast.LENGTH_SHORT).show();
+        }
+    };
+
+
 }
+
