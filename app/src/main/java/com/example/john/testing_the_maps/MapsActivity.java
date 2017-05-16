@@ -4,8 +4,6 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
-import android.location.Location;
-import android.location.LocationListener;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -14,14 +12,24 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.maps.DirectionsApi;
+import com.google.maps.GeoApiContext;
+import com.google.maps.errors.ApiException;
+import com.google.maps.model.DirectionsResult;
+import com.google.maps.model.EncodedPolyline;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 
 //TODO listen for gps state changes and hide/reveal the my location marker accordingly
@@ -42,22 +50,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        /*this.getApplicationContext()
-                .getContentResolver()
-                .registerContentObserver(
-                        Settings.Secure.CONTENT_URI, true, );*/
-    }
-
-    @Override
-    protected void onResume() {
-        //registerReceiver( myLocationListener(), new IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION));
-        super.onResume();
-    }
-
-    @Override
-    protected void onDestroy() {
-        //unregisterReceiver(mGpsSwitchStateReceiver);
-        super.onDestroy();
     }
 
     /**
@@ -105,24 +97,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return;
         }
 
-        /*mMap.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
-            @Override
-            public boolean onMyLocationButtonClick(){
+        GeoApiContext context = new GeoApiContext()
+                .setQueryRateLimit(3)
+                .setConnectTimeout(1, TimeUnit.SECONDS)
+                .setReadTimeout(1, TimeUnit.SECONDS)
+                .setWriteTimeout(1, TimeUnit.SECONDS).setApiKey("AIzaSyAa5T-N6-BRrJZSK0xlSrWlTh-C7RjOVdY");
 
-                return false;
-            }
-        });*/
+        DirectionsResult result = new DirectionsResult();
+        try {
+            result = DirectionsApi.getDirections(context, "Toronto", "Montreal").await();
+        } catch (ApiException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        /*new LocationSource.OnLocationChangedListener(){
-            @Override
-            public void onLocationChanged(Location location) {
-                if(Settings.Secure.LOCATION_MODE.equals(Integer.toString(Settings.Secure.LOCATION_MODE_OFF))){
-                    Toast.makeText(MapsActivity.this, "Location setting changed", Toast.LENGTH_SHORT).show();
-                }
-            }
-        };*/
+        EncodedPolyline encPolyline = result.routes[0].overviewPolyline;
+        PolylineOptions polylineOptions = new PolylineOptions();
 
+        LatLng linePoint = null;
+        for(com.google.maps.model.LatLng point: encPolyline.decodePath()){
+            linePoint = new LatLng(point.lat, point.lng);
+            polylineOptions.add(linePoint);
+        }
+        final Polyline polyline = mMap.addPolyline(polylineOptions);
 
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(linePoint));
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(5f), 2000, null);
 
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
@@ -176,45 +179,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         BtnGetDirs.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
+                if(polyline.isVisible()){
+                    polyline.setVisible(false);
+                }else{
+                    polyline.setVisible(true);
+                }
             }
+
         });
     }
-
-    /*private BroadcastReceiver mGpsSwitchStateReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent){
-            Toast.makeText(MapsActivity.this, intent.getAction(), Toast.LENGTH_SHORT).show();
-            *//*if(intent.getAction().matches("android.location.PROVIDERS_CHANGED")){
-                if(Settings.Secure.LOCATION_MODE.equals(Integer.toString(Settings.Secure.LOCATION_MODE_OFF))){
-                    Toast.makeText(MapsActivity.this, "Location setting changed", Toast.LENGTH_SHORT).show();
-                }
-            }*//*
-        }
-    };*/
-
-    private LocationListener myLocationListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-
-        }
-
-        @Override
-        public void onStatusChanged(String s, int i, Bundle bundle) {
-
-        }
-
-        @Override
-        public void onProviderEnabled(String s) {
-            Toast.makeText(MapsActivity.this, "GPS Enabled", Toast.LENGTH_SHORT).show();
-        }
-
-        @Override
-        public void onProviderDisabled(String s) {
-            Toast.makeText(MapsActivity.this, "GPS Disabled", Toast.LENGTH_SHORT).show();
-        }
-    };
-
-
 }
 
