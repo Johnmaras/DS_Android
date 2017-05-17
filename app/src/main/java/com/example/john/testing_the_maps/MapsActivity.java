@@ -33,12 +33,16 @@ import java.util.concurrent.TimeUnit;
 
 
 //TODO listen for gps state changes and hide/reveal the my location marker accordingly
+//TODO get directions asynchronously
+//FIXME app crashes if it cannot connect to the Directions API
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
 
+    private final String ApiKey = "AIzaSyAa5T-N6-BRrJZSK0xlSrWlTh-C7RjOVdY";
     private GoogleMap mMap;
     private MarkerOptions options = new MarkerOptions();
-    private ArrayList<LatLng> places = new ArrayList<>();
+    //private ArrayList<LatLng> places = new ArrayList<>();
     private ArrayList<Marker> markers = new ArrayList<>();
+    private ArrayList<Polyline> polylines = new ArrayList<>();
     private boolean marksVisible = true;
     private final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
 
@@ -69,6 +73,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.getUiSettings().setMyLocationButtonEnabled(false);
 
+        final GeoApiContext context = new GeoApiContext()
+                .setQueryRateLimit(3)
+                .setConnectTimeout(1, TimeUnit.SECONDS)
+                .setReadTimeout(1, TimeUnit.SECONDS)
+                .setWriteTimeout(1, TimeUnit.SECONDS).setApiKey(ApiKey);
+
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -97,35 +107,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return;
         }
 
-        GeoApiContext context = new GeoApiContext()
-                .setQueryRateLimit(3)
-                .setConnectTimeout(1, TimeUnit.SECONDS)
-                .setReadTimeout(1, TimeUnit.SECONDS)
-                .setWriteTimeout(1, TimeUnit.SECONDS).setApiKey("AIzaSyAa5T-N6-BRrJZSK0xlSrWlTh-C7RjOVdY");
 
-        DirectionsResult result = new DirectionsResult();
-        try {
-            result = DirectionsApi.getDirections(context, "Toronto", "Montreal").await();
-        } catch (ApiException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        EncodedPolyline encPolyline = result.routes[0].overviewPolyline;
-        PolylineOptions polylineOptions = new PolylineOptions();
-
-        LatLng linePoint = null;
-        for(com.google.maps.model.LatLng point: encPolyline.decodePath()){
-            linePoint = new LatLng(point.lat, point.lng);
-            polylineOptions.add(linePoint);
-        }
-        final Polyline polyline = mMap.addPolyline(polylineOptions);
-
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(linePoint));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(5f), 2000, null);
 
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
@@ -166,11 +148,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             @Override
             public void onClick(View view){
-                for(Marker marker: markers){
-                    marker.setVisible(!marker.isVisible());
+                if(polylines.get(0).isVisible()){
+                    polylines.get(0).setVisible(false);
+                }else{
+                    polylines.get(0).setVisible(true);
                 }
-                marksVisible = !marksVisible;
-                BtnToggleHide.setText(marksVisible ? "Hide":"Reveal");
+                BtnToggleHide.setText(polylines.get(0).isVisible() ? "Hide":"Reveal");
             }
         });
 
@@ -179,11 +162,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         BtnGetDirs.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(polyline.isVisible()){
-                    polyline.setVisible(false);
-                }else{
-                    polyline.setVisible(true);
+                DirectionsResult result = new DirectionsResult();
+                try {
+                    result = DirectionsApi.getDirections(context, "Toronto", "Montreal").await();
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
+
+                if(result.routes != null){
+                    EncodedPolyline encPolyline = result.routes[0].overviewPolyline;
+                    PolylineOptions polylineOptions = new PolylineOptions();
+                    Polyline polyline;
+                    LatLng linePoint = null;
+                    for(com.google.maps.model.LatLng point: encPolyline.decodePath()){
+                        linePoint = new LatLng(point.lat, point.lng);
+                        polylineOptions.add(linePoint);
+                    }
+                    polyline = mMap.addPolyline(polylineOptions);
+                    polylines.add(polyline);
+
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(linePoint));
+                    mMap.animateCamera(CameraUpdateFactory.zoomTo(5f), 2000, null);
+                }else{
+                    Toast.makeText(MapsActivity.this, "Check your internet connection", Toast.LENGTH_SHORT).show();
+                }
+
             }
 
         });
