@@ -15,7 +15,7 @@
     tools:context="com.example.john.testing_the_maps.MapsActivity" />
 
     <Button
-        android:id="@+id/btnToggleHide"
+        android:id="@+id/btnClearMarkers"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
