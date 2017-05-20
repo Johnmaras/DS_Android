@@ -5,10 +5,10 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
-import android.view.DragEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -49,6 +49,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private ArrayList<PolylineOptions> polOptions = new ArrayList<>();
     //private boolean marksVisible = true;
     private final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
+    private boolean permissionGranted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,36 +74,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        mMap.setMyLocationEnabled(true);
-        mMap.getUiSettings().setMapToolbarEnabled(false);
-        mMap.getUiSettings().setMyLocationButtonEnabled(false);
-
         final GeoApiContext context = new GeoApiContext()
                 .setQueryRateLimit(3)
                 .setConnectTimeout(1, TimeUnit.SECONDS)
                 .setReadTimeout(1, TimeUnit.SECONDS)
                 .setWriteTimeout(1, TimeUnit.SECONDS).setApiKey(ApiKey);
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Location Permission Needed")
-                    .setMessage("This app needs the Location permission, please accept to use location functionality")
-                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            //Prompt the user once explanation has been shown
-                            ActivityCompat.requestPermissions(MapsActivity.this,
-                                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                                    MY_PERMISSIONS_REQUEST_LOCATION );
-                        }
-                    })
-                    .create()
-                    .show();
-            return;
+        if(permissionGranted){
+            mMap.setMyLocationEnabled(true);
         }
+        mMap.getUiSettings().setMapToolbarEnabled(false);
+        mMap.getUiSettings().setMyLocationButtonEnabled(false);
 
         mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
             @Override
@@ -138,7 +120,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
 
         final Button btnClearMarkers = (Button) findViewById(R.id.btnClearMarkers);
-        btnClearMarkers.setText("Clear Markers");
 
         btnClearMarkers.setOnClickListener(new View.OnClickListener(){
 
@@ -172,24 +153,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     e.printStackTrace();
                 }
                 if(result.routes != null){
-                    EncodedPolyline encPolyline = result.routes[0].overviewPolyline;
-                    PolylineOptions polylineOptions = new PolylineOptions();
-                    Polyline polyline;
-                    LatLng linePoint = null;
-                    for(com.google.maps.model.LatLng point: encPolyline.decodePath()){
-                        linePoint = new LatLng(point.lat, point.lng);
-                        polylineOptions.add(linePoint);
-                    }
-                    for(Polyline pol: polylines){
-                        pol.remove();
-                    }
-                    polylines.clear();
-                    polyline = mMap.addPolyline(polylineOptions);
-                    polOptions.add(polylineOptions);
-                    polylines.add(polyline);
+                    if(result.routes.length > 0) {
+                        EncodedPolyline encPolyline = result.routes[0].overviewPolyline;
+                        PolylineOptions polylineOptions = new PolylineOptions();
+                        Polyline polyline;
+                        LatLng linePoint = null;
+                        for (com.google.maps.model.LatLng point : encPolyline.decodePath()) {
+                            linePoint = new LatLng(point.lat, point.lng);
+                            polylineOptions.add(linePoint);
+                        }
+                        for (Polyline pol : polylines) {
+                            pol.remove();
+                        }
+                        polylines.clear();
+                        polyline = mMap.addPolyline(polylineOptions);
+                        polOptions.add(polylineOptions);
+                        polylines.add(polyline);
 
-                    mMap.moveCamera(CameraUpdateFactory.newLatLng(linePoint));
-                    mMap.animateCamera(CameraUpdateFactory.zoomTo(17), 2000, null);
+                        mMap.moveCamera(CameraUpdateFactory.newLatLng(linePoint));
+                        mMap.animateCamera(CameraUpdateFactory.zoomTo(17), 2000, null);
+                    }
                 }else{
                     Toast.makeText(MapsActivity.this, "Check your internet connection", Toast.LENGTH_SHORT).show();
                 }
@@ -197,6 +180,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
 
         });
+    }
+
+    private boolean getPermissions(){
+        final boolean granted = false;
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+
+            new AlertDialog.Builder(this)
+                    .setTitle("Location Permission Needed")
+                    .setMessage("This app needs the Location permission, please accept to use location functionality")
+                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            //Prompt the user once explanation has been shown
+                            ActivityCompat.requestPermissions(MapsActivity.this,
+                                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                                    MY_PERMISSIONS_REQUEST_LOCATION );
+                        }
+                    })
+                    .create()
+                    .show();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if(requestCode == MY_PERMISSIONS_REQUEST_LOCATION){
+            if(permissions.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                permissionGranted = true;
+            }
+        }
     }
 }
 
