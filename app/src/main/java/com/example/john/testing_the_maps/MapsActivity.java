@@ -1,13 +1,8 @@
 package com.example.john.testing_the_maps;
 
-import android.Manifest;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.view.View;
 import android.widget.Button;
@@ -36,20 +31,15 @@ import java.util.concurrent.TimeUnit;
 
 //TODO listen for gps state changes and hide/reveal the my location marker accordingly
 //TODO get directions asynchronously
-//TODO why do two different kinds of LatLng exist?
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
 
     private final String ApiKey = "AIzaSyAa5T-N6-BRrJZSK0xlSrWlTh-C7RjOVdY";
     private GoogleMap mMap;
     private MarkerOptions options = new MarkerOptions();
-    //private ArrayList<LatLng> places = new ArrayList<>();
     private ArrayList<Marker> markers = new ArrayList<>();
     private int olderMarker = 0;
     private ArrayList<Polyline> polylines = new ArrayList<>();
     private ArrayList<PolylineOptions> polOptions = new ArrayList<>();
-    //private boolean marksVisible = true;
-    private final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
-    private boolean permissionGranted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,18 +63,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        mMap.getUiSettings().setMapToolbarEnabled(false);
+        mMap.getUiSettings().setMyLocationButtonEnabled(false);
 
         final GeoApiContext context = new GeoApiContext()
                 .setQueryRateLimit(3)
                 .setConnectTimeout(1, TimeUnit.SECONDS)
                 .setReadTimeout(1, TimeUnit.SECONDS)
                 .setWriteTimeout(1, TimeUnit.SECONDS).setApiKey(ApiKey);
-
-        if(permissionGranted){
-            mMap.setMyLocationEnabled(true);
-        }
-        mMap.getUiSettings().setMapToolbarEnabled(false);
-        mMap.getUiSettings().setMyLocationButtonEnabled(false);
 
         mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
             @Override
@@ -112,7 +98,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
                 options.position(latLng);
                 options.draggable(true);
-                options.title("Point " + (markers.size() + 1));
+                options.title((olderMarker + 1 == 1) ? "Start" : "Destination");
                 options.snippet("Testing the Maps");
                 markers.add(olderMarker, mMap.addMarker(options));
                 olderMarker = olderMarker == 0 ? 1:0;
@@ -122,7 +108,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         final Button btnClearMarkers = (Button) findViewById(R.id.btnClearMarkers);
 
         btnClearMarkers.setOnClickListener(new View.OnClickListener(){
-
             @Override
             public void onClick(View view){
                 for(Marker marker: markers){
@@ -182,36 +167,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
-    private boolean getPermissions(){
-        final boolean granted = false;
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                        != PackageManager.PERMISSION_GRANTED) {
-
-            new AlertDialog.Builder(this)
-                    .setTitle("Location Permission Needed")
-                    .setMessage("This app needs the Location permission, please accept to use location functionality")
-                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            //Prompt the user once explanation has been shown
-                            ActivityCompat.requestPermissions(MapsActivity.this,
-                                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
-                                    MY_PERMISSIONS_REQUEST_LOCATION );
-                        }
-                    })
-                    .create()
-                    .show();
+    private class DirectionsRequest extends AsyncTask<LatLng, Void, Polyline/*under consideration*/>{
+        @Override
+        protected Polyline doInBackground(LatLng... latLngs) {
+            return null;
         }
-    }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if(requestCode == MY_PERMISSIONS_REQUEST_LOCATION){
-            if(permissions.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                permissionGranted = true;
-            }
+        @Override
+        protected void onPostExecute(Polyline polyline) {
+            super.onPostExecute(polyline);
         }
     }
 }

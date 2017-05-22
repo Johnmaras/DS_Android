@@ -3,7 +3,7 @@
     map:mapType = "normal"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical">
 
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:map="http://schemas.android.com/apk/res-auto"
@@ -16,6 +16,7 @@
 
     <Button
         android:id="@+id/btnClearMarkers"
+        android:text="@string/btnClearMarkers"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
