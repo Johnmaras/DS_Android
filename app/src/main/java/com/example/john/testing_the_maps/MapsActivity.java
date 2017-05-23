@@ -6,7 +6,6 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentActivity;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ListAdapter;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -18,7 +17,6 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.maps.model.internal.IPolylineDelegate;
 import com.google.maps.DirectionsApi;
 import com.google.maps.DirectionsApiRequest;
 import com.google.maps.GeoApiContext;
@@ -125,7 +123,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         BtnGetDirs.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view){
-                /*com.google.maps.model.LatLng point1 = new com.google.maps.model.LatLng(markers.get(0).getPosition().latitude, markers.get(0).getPosition().longitude);
+                com.google.maps.model.LatLng point1 = new com.google.maps.model.LatLng(markers.get(0).getPosition().latitude, markers.get(0).getPosition().longitude);
                 com.google.maps.model.LatLng point2 = new com.google.maps.model.LatLng(markers.get(1).getPosition().latitude, markers.get(1).getPosition().longitude);
                 DirectionsApiRequest request = DirectionsApi.newRequest(context).origin(point1).destination(point2);
 
@@ -138,10 +136,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
-                }*/
+                }
 
-
-                DirectionsRequest.execute();
                 if(result != null){
                     if(result.routes.length > 0) {
                         EncodedPolyline encPolyline = result.routes[0].overviewPolyline;
