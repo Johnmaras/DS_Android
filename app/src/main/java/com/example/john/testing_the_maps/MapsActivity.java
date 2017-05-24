@@ -49,7 +49,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleMap mMap;
 
     private MarkerOptions options = new MarkerOptions();
-    private ArrayList<LatLng> london = getLondon();
+    private ArrayList<LatLng> london;
     private ArrayList<Marker> markers = new ArrayList<>();
     private ArrayList<Polyline> polylines = new ArrayList<>();
     private ArrayList<PolylineOptions> polOptions = new ArrayList<>();
@@ -192,44 +192,64 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
-    private static ArrayList<LatLng> getLondon(){
-        //TODO download data from http://polygons.openstreetmap.fr/get_poly.py?id=65606&params=0
-        //TODO create the london file
+    private void getLondon(){
+        String url = "http://polygons.openstreetmap.fr/get_poly.py?id=65606&params=0"; //bulk
+        //String url = "http://polygons.openstreetmap.fr/get_geojson.py?id=65606&params=0"; // json
+        GetBounds foo = new GetBounds();
+        foo.execute(url);
+    }
 
-        //TODO use JSoup for Json parsing
-        try{
-            String url = "http://polygons.openstreetmap.fr/get_poly.py?id=65606&params=0";
-            URL website = new URL(url);
-            ReadableByteChannel rbc = Channels.newChannel(website.openStream());
-            FileOutputStream fos = new FileOutputStream(london_file);
-            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-            fos.close();
-            rbc.close();
+    private class GetBounds extends AsyncTask<String, Void, ArrayList<LatLng>>{
 
-        }catch(IOException e){
-            e.printStackTrace();
-        }
+        @Override
+        protected ArrayList<LatLng> doInBackground(String... params) {
+            //TODO download data from http://polygons.openstreetmap.fr/get_poly.py?id=65606&params=0
+            //TODO create the london file
 
-        ArrayList<LatLng> bounds = new ArrayList<>();
+            //TODO use JSoup for Json parsing
+            try{
+                String url = params[0];
+                URL website = new URL(url);
 
-        try{
-            BufferedReader reader = new BufferedReader(new FileReader(london_file));
-            LatLng point;
-            String line = reader.readLine();
-            while(line != null){
-                String[] coords = line.trim().split(" ");
-                double longitude = Double.parseDouble(coords[0].trim());
-                double latitude = Double.parseDouble(coords[1].trim());
-                point = new LatLng(latitude, longitude);
-                bounds.add(point);
-                line = reader.readLine();
+                ReadableByteChannel rbc = Channels.newChannel(website.openStream());
+                FileOutputStream fos = new FileOutputStream(london_file);
+                fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+
+                fos.close();
+                rbc.close();
+            }catch(IOException e){
+                e.printStackTrace();
             }
-        }catch(FileNotFoundException e){
-            e.printStackTrace();
-        }catch(IOException e){
-            e.printStackTrace();
+
+            ArrayList<LatLng> bounds = new ArrayList<>();
+
+            try{
+                BufferedReader reader = new BufferedReader(new FileReader(london_file));
+                LatLng point;
+                String line = reader.readLine();
+                while(line != null){
+                    String[] coords = line.trim().split(" ");
+                    double longitude = Double.parseDouble(coords[0].trim());
+                    double latitude = Double.parseDouble(coords[1].trim());
+                    point = new LatLng(latitude, longitude);
+                    bounds.add(point);
+                    line = reader.readLine();
+                }
+            }catch(FileNotFoundException e){
+                e.printStackTrace();
+            }catch(IOException e){
+                e.printStackTrace();
+            }
+            return bounds;
         }
-        return bounds;
+
+        @Override
+        protected void onPostExecute(ArrayList<LatLng> latLngs) {
+            london = latLngs;
+            PolygonOptions londonPolygon = new PolygonOptions();
+            londonPolygon.addAll(london);
+            mMap.addPolygon(londonPolygon);
+        }
     }
 
     private class DirectionsRequest extends AsyncTask<LatLngAdapter, Void, PolylineAdapter/*under consideration*/>{
