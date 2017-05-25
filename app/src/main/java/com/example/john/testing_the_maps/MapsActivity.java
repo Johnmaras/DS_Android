@@ -18,6 +18,8 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.maps.DirectionsApi;
 import com.google.maps.DirectionsApiRequest;
 import com.google.maps.GeoApiContext;
@@ -82,9 +84,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        PolygonOptions londonPolygon = new PolygonOptions();
-        londonPolygon.addAll(london);
-        mMap.addPolygon(londonPolygon);
+        getLondon();
 
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.getUiSettings().setMyLocationButtonEnabled(false);
@@ -204,21 +204,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         @Override
         protected ArrayList<LatLng> doInBackground(String... params) {
             //TODO download data from http://polygons.openstreetmap.fr/get_poly.py?id=65606&params=0
-            //TODO create the london file
 
-            //TODO use JSoup for Json parsing
-            try{
-                String url = params[0];
-                URL website = new URL(url);
+            if(!london_file.exists()){
+                try{
+                    //TODO needs write to filesystem permission
+                    london_file.createNewFile();
 
-                ReadableByteChannel rbc = Channels.newChannel(website.openStream());
-                FileOutputStream fos = new FileOutputStream(london_file);
-                fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                    String url = params[0];
+                    URL website = new URL(url);
 
-                fos.close();
-                rbc.close();
-            }catch(IOException e){
-                e.printStackTrace();
+                    ReadableByteChannel rbc = Channels.newChannel(website.openStream());
+                    FileOutputStream fos = new FileOutputStream(london_file);
+                    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+
+                    fos.close();
+                    rbc.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
             ArrayList<LatLng> bounds = new ArrayList<>();
@@ -228,7 +231,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 LatLng point;
                 String line = reader.readLine();
                 while(line != null){
-                    String[] coords = line.trim().split(" ");
+                    String[] coords = line.trim().split("\\s+");
                     double longitude = Double.parseDouble(coords[0].trim());
                     double latitude = Double.parseDouble(coords[1].trim());
                     point = new LatLng(latitude, longitude);
@@ -252,7 +255,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private class DirectionsRequest extends AsyncTask<LatLngAdapter, Void, PolylineAdapter/*under consideration*/>{
+    private class DirectionsRequest extends AsyncTask<LatLngAdapter, Void, PolylineAdapter/*under consideration*/> {
         @Override
         protected PolylineAdapter doInBackground(LatLngAdapter... latLngs) {
             return null;
@@ -263,5 +266,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             super.onPostExecute(polyline);
         }
     }
+
 }
 
