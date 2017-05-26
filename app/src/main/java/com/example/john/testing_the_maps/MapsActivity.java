@@ -4,6 +4,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -18,8 +19,9 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.maps.DirectionsApi;
 import com.google.maps.DirectionsApiRequest;
 import com.google.maps.GeoApiContext;
@@ -27,23 +29,20 @@ import com.google.maps.errors.ApiException;
 import com.google.maps.model.DirectionsResult;
 import com.google.maps.model.EncodedPolyline;
 
-import java.io.BufferedReader;
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-
-
-
 //TODO listen for gps state changes and hide/reveal the my location marker accordingly
-//TODO get directions asynchronously
+//TODO optimize london_file
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
 
     private final String ApiKey = "AIzaSyAa5T-N6-BRrJZSK0xlSrWlTh-C7RjOVdY";
@@ -58,7 +57,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private int olderMarker = 0;
 
-    private static final File london_file = new File("london");
+    private static File london_file;
 
 
     @Override
@@ -193,8 +192,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void getLondon(){
-        String url = "http://polygons.openstreetmap.fr/get_poly.py?id=65606&params=0"; //bulk
-        //String url = "http://polygons.openstreetmap.fr/get_geojson.py?id=65606&params=0"; // json
+        //String url = "http://polygons.openstreetmap.fr/get_poly.py?id=65606&params=0"; //bulk
+        String url = "http://polygons.openstreetmap.fr/get_geojson.py?id=65606&params=0"; // json
         GetBounds foo = new GetBounds();
         foo.execute(url);
     }
@@ -203,22 +202,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         protected ArrayList<LatLng> doInBackground(String... params) {
-            //TODO download data from http://polygons.openstreetmap.fr/get_poly.py?id=65606&params=0
 
-            if(!london_file.exists()){
+            if(london_file == null || !london_file.exists()){
+                Log.e("MapsActivity_GetBounds", "london_file is null or it doesn't exist");
                 try{
-                    //TODO needs write to filesystem permission
-                    london_file.createNewFile();
+                    london_file  = new File(MapsActivity.this.getFilesDir(), "london.json");
 
                     String url = params[0];
                     URL website = new URL(url);
 
-                    ReadableByteChannel rbc = Channels.newChannel(website.openStream());
-                    FileOutputStream fos = new FileOutputStream(london_file);
-                    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                    FileUtils.copyURLToFile(website, london_file, 10000, 10000);
 
-                    fos.close();
-                    rbc.close();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -226,23 +224,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             ArrayList<LatLng> bounds = new ArrayList<>();
 
-            try{
-                BufferedReader reader = new BufferedReader(new FileReader(london_file));
+            try {
+                JsonParser parser = new JsonParser();
+                FileReader fr = new FileReader(london_file);
+                Object obj = parser.parse(fr);
+
+                JsonObject obj2 = (JsonObject)obj;
+                JsonArray geometries = (JsonArray)obj2.get("geometries");
+                JsonObject geo2 = (JsonObject)geometries.get(0);
+                JsonArray coordinates = (JsonArray)geo2.get("coordinates"); //has two arrays
+                JsonArray array = (JsonArray) coordinates.get(0);
+                JsonArray array0 = (JsonArray) array.get(0);
+
+                Iterator it_inner = array0.iterator();
                 LatLng point;
-                String line = reader.readLine();
-                while(line != null){
-                    String[] coords = line.trim().split("\\s+");
-                    double longitude = Double.parseDouble(coords[0].trim());
-                    double latitude = Double.parseDouble(coords[1].trim());
+                while(it_inner.hasNext()){
+                    JsonArray tuple = (JsonArray)it_inner.next();
+                    double longitude = tuple.get(0).getAsDouble();
+                    double latitude = tuple.get(1).getAsDouble();
                     point = new LatLng(latitude, longitude);
                     bounds.add(point);
-                    line = reader.readLine();
                 }
-            }catch(FileNotFoundException e){
-                e.printStackTrace();
-            }catch(IOException e){
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+
             return bounds;
         }
 
@@ -250,6 +256,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         protected void onPostExecute(ArrayList<LatLng> latLngs) {
             london = latLngs;
             PolygonOptions londonPolygon = new PolygonOptions();
+            //TODO make polygon pretty
             londonPolygon.addAll(london);
             mMap.addPolygon(londonPolygon);
         }
