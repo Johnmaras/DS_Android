@@ -29,9 +29,12 @@ import com.google.gson.JsonParser;
 import com.google.maps.DirectionsApi;
 import com.google.maps.DirectionsApiRequest;
 import com.google.maps.GeoApiContext;
+import com.google.maps.GeocodingApi;
 import com.google.maps.errors.ApiException;
+import com.google.maps.model.Bounds;
 import com.google.maps.model.DirectionsResult;
 import com.google.maps.model.EncodedPolyline;
+import com.google.maps.model.GeocodingResult;
 
 import org.apache.commons.io.FileUtils;
 
@@ -204,6 +207,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         foo.execute(url);
     }
 
+    private LatLng toAndroidLatLng(com.google.maps.model.LatLng point){
+        return new LatLng(point.lat, point.lng);
+    }
+
     private class GetBounds extends AsyncTask<String, Void, ArrayList<LatLng>>{
 
         @Override
@@ -263,33 +270,29 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             londonBounds = latLngs;
 
+            Bounds londonCenter = new Bounds();
+            try {
+                GeocodingResult[] l = GeocodingApi.newRequest(context).address("London").region("uk").await();
+                londonCenter = l[0].geometry.bounds;
+            } catch (ApiException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            LatLngBounds londonLatLngBouns = new LatLngBounds(toAndroidLatLng(londonCenter.southwest), toAndroidLatLng(londonCenter.northeast));
+
             PolygonOptions londonPolygon = new PolygonOptions();
             List<PatternItem> pattern = Arrays.<PatternItem>asList(new Dash(30), new Gap(20));
             londonPolygon.strokePattern(pattern);
             londonPolygon.strokeColor(getResources().getColor(R.color.AreaBounds));
 
             londonPolygon.addAll(londonBounds);
-            double maxLat = Double.MIN_VALUE;
-            double maxLng = Double.MIN_VALUE;
-            double minLat = Double.MAX_VALUE;
-            double minLng = Double.MAX_VALUE;
-            for(LatLng point: londonBounds){
-                double lat = point.latitude;
-                double lng = point.longitude;
-                if(lat > maxLat) maxLat = lat;
-                if(lat < minLat) minLat = lat;
-                if(lng > maxLng) maxLng = lng;
-                if(lng < minLng) minLng = lng;
-            }
-            Log.e("Maps_onPost", "maxLat = " + maxLat);
-            Log.e("Maps_onPost", "maxLng = " + maxLng);
-            Log.e("Maps_onPost", "minLat = " + minLat);
-            Log.e("Maps_onPost", "minLng = " + minLng);
-            LatLng point1 = new LatLng(maxLat, maxLng);
-            LatLng point2 = new LatLng(minLat, minLng);
+
             mMap.addPolygon(londonPolygon);
-            LatLngBounds latLngBounds = new LatLngBounds(point2, point1);
-            mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, 32), 2000, null);
+            mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(londonLatLngBouns, 32), 2000, null);
         }
     }
 
