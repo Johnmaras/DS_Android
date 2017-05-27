@@ -14,8 +14,10 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -256,9 +258,29 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         protected void onPostExecute(ArrayList<LatLng> latLngs) {
             london = latLngs;
             PolygonOptions londonPolygon = new PolygonOptions();
+            londonPolygon.strokeColor(0x3963B731); //FIXME
             //TODO make polygon pretty
             londonPolygon.addAll(london);
-            mMap.addPolygon(londonPolygon);
+            double maxLat = Double.MIN_VALUE;
+            double maxLng = Double.MIN_VALUE;
+            double minLat = Double.MAX_VALUE;
+            double minLng = Double.MAX_VALUE;
+            for(LatLng point: london){
+                double lat = point.latitude;
+                double lng = point.longitude;
+                if(lat > maxLat) maxLat = lat;
+                if(lat < minLat) minLat = lat;
+                if(lng > maxLng) maxLng = lng;
+                if(lng < minLng) minLng = lng;
+            }
+            Log.e("Maps_onPost", "maxLat = " + maxLat);
+            Log.e("Maps_onPost", "maxLng = " + maxLng);
+            Log.e("Maps_onPost", "minLat = " + minLat);
+            Log.e("Maps_onPost", "minLng = " + minLng);
+            LatLng point1 = new LatLng(maxLat, maxLng);
+            LatLng point2 = new LatLng(minLat, minLng);
+            LatLngBounds latLngBounds = new LatLngBounds(point2, point1);
+            mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, 32), 2000, null);
         }
     }
 
