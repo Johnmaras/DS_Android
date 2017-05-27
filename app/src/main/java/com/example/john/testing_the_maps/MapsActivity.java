@@ -13,11 +13,13 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.Dash;
+import com.google.android.gms.maps.model.Gap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polygon;
+import com.google.android.gms.maps.model.PatternItem;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -40,7 +42,9 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 //TODO listen for gps state changes and hide/reveal the my location marker accordingly
@@ -48,11 +52,12 @@ import java.util.concurrent.TimeUnit;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
 
     private final String ApiKey = "AIzaSyAa5T-N6-BRrJZSK0xlSrWlTh-C7RjOVdY";
+    private final GeoApiContext context = new GeoApiContext();
 
     private GoogleMap mMap;
 
     private MarkerOptions options = new MarkerOptions();
-    private ArrayList<LatLng> london;
+    private ArrayList<LatLng> londonBounds;
     private ArrayList<Marker> markers = new ArrayList<>();
     private ArrayList<Polyline> polylines = new ArrayList<>();
     private ArrayList<PolylineOptions> polOptions = new ArrayList<>();
@@ -90,11 +95,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.getUiSettings().setMyLocationButtonEnabled(false);
 
-        final GeoApiContext context = new GeoApiContext()
-                .setQueryRateLimit(3)
-                .setConnectTimeout(1, TimeUnit.SECONDS)
-                .setReadTimeout(1, TimeUnit.SECONDS)
-                .setWriteTimeout(1, TimeUnit.SECONDS).setApiKey(ApiKey);
+        context.setQueryRateLimit(3)
+               .setConnectTimeout(1, TimeUnit.SECONDS)
+               .setReadTimeout(1, TimeUnit.SECONDS)
+               .setWriteTimeout(1, TimeUnit.SECONDS).setApiKey(ApiKey);
 
         mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
             @Override
@@ -256,16 +260,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         protected void onPostExecute(ArrayList<LatLng> latLngs) {
-            london = latLngs;
+
+            londonBounds = latLngs;
+
             PolygonOptions londonPolygon = new PolygonOptions();
-            londonPolygon.strokeColor(0x3963B731); //FIXME
-            //TODO make polygon pretty
-            londonPolygon.addAll(london);
+            List<PatternItem> pattern = Arrays.<PatternItem>asList(new Dash(30), new Gap(20));
+            londonPolygon.strokePattern(pattern);
+            londonPolygon.strokeColor(getResources().getColor(R.color.AreaBounds));
+
+            londonPolygon.addAll(londonBounds);
             double maxLat = Double.MIN_VALUE;
             double maxLng = Double.MIN_VALUE;
             double minLat = Double.MAX_VALUE;
             double minLng = Double.MAX_VALUE;
-            for(LatLng point: london){
+            for(LatLng point: londonBounds){
                 double lat = point.latitude;
                 double lng = point.longitude;
                 if(lat > maxLat) maxLat = lat;
@@ -279,6 +287,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Log.e("Maps_onPost", "minLng = " + minLng);
             LatLng point1 = new LatLng(maxLat, maxLng);
             LatLng point2 = new LatLng(minLat, minLng);
+            mMap.addPolygon(londonPolygon);
             LatLngBounds latLngBounds = new LatLngBounds(point2, point1);
             mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, 32), 2000, null);
         }
