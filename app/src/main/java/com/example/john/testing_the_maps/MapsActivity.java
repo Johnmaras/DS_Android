@@ -230,7 +230,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             ArrayList<LatLng> bounds = new ArrayList<>();
 
-            try {
+            try{
                 JsonParser parser = new JsonParser();
                 FileReader fr = new FileReader(london_file);
                 Object obj = parser.parse(fr);
