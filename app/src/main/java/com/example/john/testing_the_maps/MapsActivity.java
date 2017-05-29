@@ -44,7 +44,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -133,7 +137,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
                     options.position(latLng);
                     options.draggable(true);
-                    options.title((olderMarker + 1 == 1) ? "Start" : "Destination");
+                    options.title((olderMarker + 1 == 1) ? "Origin" : "Destination");
                     options.snippet("Testing the Maps");
                     markers.add(olderMarker, mMap.addMarker(options));
                     olderMarker = olderMarker == 0 ? 1 : 0;
@@ -160,8 +164,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         BtnGetDirs.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view){
-                com.google.maps.model.LatLng point1 = new com.google.maps.model.LatLng(markers.get(0).getPosition().latitude, markers.get(0).getPosition().longitude);
+            public void onClick(View view){ //the workers will determine which is the origin and which the destination
+                Marker m1 = markers.get(0);
+                m1.setTag(m1.getTitle());
+
+                Marker m2 = markers.get(1);
+                m2.setTag(m2.getTitle());
+
+                LatLngAdapter lla1 = new LatLngAdapter(m1.getPosition().latitude, m1.getPosition().longitude);
+                LatLngAdapter lla2 = new LatLngAdapter(m2.getPosition().latitude, m2.getPosition().longitude);
+
+                DirectionsRequest request = new DirectionsRequest();
+                request.execute(lla1, lla2);
+                /*com.google.maps.model.LatLng point1 = new com.google.maps.model.LatLng(markers.get(0).getPosition().latitude, markers.get(0).getPosition().longitude);
                 com.google.maps.model.LatLng point2 = new com.google.maps.model.LatLng(markers.get(1).getPosition().latitude, markers.get(1).getPosition().longitude);
                 DirectionsApiRequest request = DirectionsApi.newRequest(context).origin(point1).destination(point2);
 
@@ -200,7 +215,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
                 }else{
                     Toast.makeText(MapsActivity.this, "Check your internet connection", Toast.LENGTH_SHORT).show();
-                }
+                }*/
             }
         });
     }
@@ -303,7 +318,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private class DirectionsRequest extends AsyncTask<LatLngAdapter, Void, PolylineAdapter/*under consideration*/> {
         @Override
         protected PolylineAdapter doInBackground(LatLngAdapter... latLngs) {
-            return null;
+            Socket masterCon = null;
+            while(masterCon == null){
+                try{
+                    //TODO get master ip and port from config file or global variable from the settings activity
+                    masterCon = new Socket(InetAddress.getByName("127.0.0.1"), 4000);
+                    ObjectOutputStream out = new ObjectOutputStream(masterCon.getOutputStream());
+                    ObjectInputStream in = new ObjectInputStream(masterCon.getInputStream());
+
+                    Message message = new Message(9);
+                }catch(IOException e){
+                    Log.e("DirectionsRequest_back", "Error on trying to connect to master");
+                }
+            }
         }
 
         @Override
