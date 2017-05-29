@@ -201,9 +201,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }else{
                     Toast.makeText(MapsActivity.this, "Check your internet connection", Toast.LENGTH_SHORT).show();
                 }
-
             }
-
         });
     }
 
