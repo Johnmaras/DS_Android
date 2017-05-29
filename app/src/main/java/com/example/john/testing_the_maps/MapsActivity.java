@@ -9,6 +9,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.example.john.testing_the_maps.point_in_polygon.Point;
+import com.example.john.testing_the_maps.point_in_polygon.Polygon;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -60,7 +62,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleMap mMap;
 
     private MarkerOptions options = new MarkerOptions();
-    private ArrayList<LatLng> londonBounds;
+    private final Polygon.Builder londonBounds = new Polygon.Builder();
     private ArrayList<Marker> markers = new ArrayList<>();
     private ArrayList<Polyline> polylines = new ArrayList<>();
     private ArrayList<PolylineOptions> polOptions = new ArrayList<>();
@@ -122,17 +124,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
-            public void onMapClick(LatLng latLng) {
-                if(!markers.isEmpty() && markers.size() == 2){
-                    markers.get(olderMarker).remove();
-                    markers.remove(olderMarker);
+            public void onMapClick(LatLng latLng){
+                Polygon londonPolygon = londonBounds.build();
+                if(londonPolygon.contains(new Point((float)latLng.latitude, (float)latLng.longitude))) {
+                    if (!markers.isEmpty() && markers.size() == 2) {
+                        markers.get(olderMarker).remove();
+                        markers.remove(olderMarker);
+                    }
+                    options.position(latLng);
+                    options.draggable(true);
+                    options.title((olderMarker + 1 == 1) ? "Start" : "Destination");
+                    options.snippet("Testing the Maps");
+                    markers.add(olderMarker, mMap.addMarker(options));
+                    olderMarker = olderMarker == 0 ? 1 : 0;
+                }else{
+                    Toast.makeText(MapsActivity.this, "Place a marker inside the London bounds", Toast.LENGTH_SHORT).show();
                 }
-                options.position(latLng);
-                options.draggable(true);
-                options.title((olderMarker + 1 == 1) ? "Start" : "Destination");
-                options.snippet("Testing the Maps");
-                markers.add(olderMarker, mMap.addMarker(options));
-                olderMarker = olderMarker == 0 ? 1:0;
             }
         });
 
@@ -257,6 +264,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     double latitude = tuple.get(1).getAsDouble();
                     point = new LatLng(latitude, longitude);
                     bounds.add(point);
+
+                    londonBounds.addVertex(new Point((float)latitude, (float)longitude));
                 }
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
@@ -267,9 +276,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         protected void onPostExecute(ArrayList<LatLng> latLngs) {
-
-            londonBounds = latLngs;
-
             Bounds londonCenter = new Bounds();
             try {
                 GeocodingResult[] l = GeocodingApi.newRequest(context).address("London").region("uk").await();
@@ -289,7 +295,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             londonPolygon.strokePattern(pattern);
             londonPolygon.strokeColor(getResources().getColor(R.color.AreaBounds));
 
-            londonPolygon.addAll(londonBounds);
+            londonPolygon.addAll(latLngs);
 
             mMap.addPolygon(londonPolygon);
             mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(londonLatLngBouns, 32), 2000, null);
