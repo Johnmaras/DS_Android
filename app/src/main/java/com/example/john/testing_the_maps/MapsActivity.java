@@ -50,6 +50,7 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -319,6 +320,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         @Override
         protected PolylineAdapter doInBackground(LatLngAdapter... latLngs) {
             Socket masterCon = null;
+            PolylineAdapter results = null;
             while(masterCon == null){
                 try{
                     //TODO get master ip and port from config file or global variable from the settings activity
@@ -326,11 +328,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     ObjectOutputStream out = new ObjectOutputStream(masterCon.getOutputStream());
                     ObjectInputStream in = new ObjectInputStream(masterCon.getInputStream());
 
-                    Message message = new Message(9);
+                    Message message = new Message();
+                    message.setRequestType(9);
+
+                    ArrayList<LatLngAdapter> points = new ArrayList<>();
+                    points.add(latLngs[0]);
+                    points.add(latLngs[1]);
+                    message.setQuery(points);
+
+                    out.writeObject(message);
+                    out.flush();
+
+                    results = (PolylineAdapter) in.readObject();
+
+                } catch (UnknownHostException e) {
+                    Log.e("DirectionsRequest_back", "Host not found!");
                 }catch(IOException e){
                     Log.e("DirectionsRequest_back", "Error on trying to connect to master");
+                } catch (ClassNotFoundException e) {
+                    Log.e("DirectionsRequest_back", "Error on trying to read the results");
                 }
             }
+            return results;
         }
 
         @Override
@@ -338,6 +357,4 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             super.onPostExecute(polyline);
         }
     }
-
 }
-
