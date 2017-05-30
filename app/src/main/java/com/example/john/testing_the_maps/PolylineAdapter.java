@@ -22,4 +22,8 @@ public class PolylineAdapter{
     public void addAllPoint(List<LatLngAdapter> point){
         points.addAll(point);
     }
+
+    public boolean isEmpy(){
+        return points.isEmpty();
+    }
 }

@@ -22,18 +22,35 @@
         android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"/>
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/btnGetDirections"
+    <com.github.clans.fab.FloatingActionMenu
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="24dp"
-        android:clickable="true"
-        map:backgroundTint="@color/colorPrimaryDark"
-        map:rippleColor="@color/colorAccent"
-        map:srcCompat="@drawable/ic_directions_white_36px" />
-<!-- FIXME: fix this^ error -->
+        map:menu_colorNormal="@color/colorPrimaryDark"
+        map:menu_colorRipple="@color/colorAccent">
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/btnSettings"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            map:fab_colorNormal="@color/colorPrimaryDark"
+            map:fab_colorRipple="@color/colorAccent"
+            android:src="@drawable/ic_settings_36dp" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/btnGetDirections"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            map:fab_colorNormal="@color/colorPrimaryDark"
+            map:fab_colorRipple="@color/colorAccent"
+            android:src="@drawable/ic_directions_white_36px" />
+
+
+    </com.github.clans.fab.FloatingActionMenu>
 
 </RelativeLayout>

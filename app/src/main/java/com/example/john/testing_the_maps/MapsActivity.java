@@ -1,8 +1,8 @@
 package com.example.john.testing_the_maps;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import com.example.john.testing_the_maps.point_in_polygon.Point;
 import com.example.john.testing_the_maps.point_in_polygon.Polygon;
+import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -28,14 +29,10 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.maps.DirectionsApi;
-import com.google.maps.DirectionsApiRequest;
 import com.google.maps.GeoApiContext;
 import com.google.maps.GeocodingApi;
 import com.google.maps.errors.ApiException;
 import com.google.maps.model.Bounds;
-import com.google.maps.model.DirectionsResult;
-import com.google.maps.model.EncodedPolyline;
 import com.google.maps.model.GeocodingResult;
 
 import org.apache.commons.io.FileUtils;
@@ -158,6 +155,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
                 markers.clear();
                 olderMarker = 0;
+            }
+        });
+
+        final FloatingActionButton BtnSettings = (FloatingActionButton) findViewById(R.id.btnSettings);
+
+        BtnSettings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent settings = new Intent(v.getContext(), Settings.class);
+                startActivity(settings);
             }
         });
 
@@ -316,12 +323,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private class DirectionsRequest extends AsyncTask<LatLngAdapter, Void, PolylineAdapter/*under consideration*/> {
+    private class DirectionsRequest extends AsyncTask<LatLngAdapter, Integer, PolylineAdapter/*under consideration*/> {
         @Override
         protected PolylineAdapter doInBackground(LatLngAdapter... latLngs) {
             Socket masterCon = null;
             PolylineAdapter results = null;
-            while(masterCon == null){
+
+            int i = 0;
+            while(masterCon == null && i < 10){
                 try{
                     //TODO get master ip and port from config file or global variable from the settings activity
                     masterCon = new Socket(InetAddress.getByName("127.0.0.1"), 4000);
@@ -348,13 +357,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 } catch (ClassNotFoundException e) {
                     Log.e("DirectionsRequest_back", "Error on trying to read the results");
                 }
+
+                i++;
             }
             return results;
         }
 
         @Override
         protected void onPostExecute(PolylineAdapter polyline) {
-            super.onPostExecute(polyline);
+            if(polyline == null || polyline.isEmpy()){
+                Log.e("DirectionsRequest_post", "Bad results");
+                Toast.makeText(MapsActivity.this, "Check your internet connection and try again", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }

@@ -2,4 +2,6 @@
     <string name="app_name">Testing_the_Maps</string>
     <string name="title_activity_maps">Map</string>
     <string name="btnClearMarkers">Clear Markers</string>
+    <string name="title_activity_settings">Settings</string>
+    <string name="settings_ip">Enter the master\'s IP</string>
 </resources>
