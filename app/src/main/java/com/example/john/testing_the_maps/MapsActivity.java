@@ -72,6 +72,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private int olderMarker = 0;
 
     private static File london_file;
+    private static LatLngBounds londonLatLngBouns;
 
 
     @Override
@@ -244,22 +245,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         @Override
         protected ArrayList<LatLng> doInBackground(String... params) {
 
-            if(london_file == null || !london_file.exists()){
-                Log.e("MapsActivity_GetBounds", "london_file is null or it doesn't exist");
+            london_file  = new File(MapsActivity.this.getFilesDir(), "london.json");
+            //FIXME the file is still present. the exists() doesn't work as expected
+            if(!london_file.exists()){
+                Log.e("MapsActivity_GetBounds", "london_file doesn't exist");
                 try{
-                    london_file  = new File(MapsActivity.this.getFilesDir(), "london.json");
-
                     String url = params[0];
                     URL website = new URL(url);
 
                     FileUtils.copyURLToFile(website, london_file, 10000, 10000);
 
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                }catch(UnknownHostException e){
+                    Log.e("MapsActivity_GetBounds", "Host Not Found!");
+                }catch(FileNotFoundException e){
+                    Log.e("MapsActivity_GetBounds", "File Not Found!");
+                }catch(MalformedURLException e){
+                    Log.e("MapsActivity_GetBounds", "Wrong URL format");
+                }catch(IOException e){
+                    Log.e("MapsActivity_GetBounds", "There was an IO Error");
                 }
             }
 
@@ -289,7 +292,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     londonBounds.addVertex(new Point((float)latitude, (float)longitude));
                 }
             } catch (FileNotFoundException e) {
-                e.printStackTrace();
+                Log.e("MapsActivity_GetBounds", "File not found");
             }
 
             return bounds;
@@ -298,28 +301,42 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         @Override
         protected void onPostExecute(ArrayList<LatLng> latLngs) {
             Bounds londonCenter = new Bounds();
+
+            GeocodingResult[] l = null;
             try {
-                GeocodingResult[] l = GeocodingApi.newRequest(context).address("London").region("uk").await();
+                l = GeocodingApi.newRequest(context).address("London").region("uk").await();
                 londonCenter = l[0].geometry.bounds;
+            } catch (UnknownHostException e) {
+                Log.e("MapsActivity_GetBOnPost", "Host not found!");
             } catch (ApiException e) {
-                e.printStackTrace();
+                Log.e("MapsActivity_GetBOnPost", "Google API Exception");
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Log.e("MapsActivity_GetBOnPost", "Google API call interrupted");
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.e("MapsActivity_GetBOnPost", "There was an IO Error");
             }
 
-            LatLngBounds londonLatLngBouns = new LatLngBounds(toAndroidLatLng(londonCenter.southwest), toAndroidLatLng(londonCenter.northeast));
+            if(latLngs != null && !latLngs.isEmpty()) {
+                PolygonOptions londonPolygon = new PolygonOptions();
+                List<PatternItem> pattern = Arrays.<PatternItem>asList(new Dash(30), new Gap(20));
+                londonPolygon.strokePattern(pattern);
+                londonPolygon.strokeColor(getResources().getColor(R.color.AreaBounds));
 
-            PolygonOptions londonPolygon = new PolygonOptions();
-            List<PatternItem> pattern = Arrays.<PatternItem>asList(new Dash(30), new Gap(20));
-            londonPolygon.strokePattern(pattern);
-            londonPolygon.strokeColor(getResources().getColor(R.color.AreaBounds));
+                londonPolygon.addAll(latLngs);
 
-            londonPolygon.addAll(latLngs);
+                mMap.addPolygon(londonPolygon);
+            }
 
-            mMap.addPolygon(londonPolygon);
-            mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(londonLatLngBouns, 32), 2000, null);
+            if(l != null){
+                londonLatLngBouns = new LatLngBounds(toAndroidLatLng(londonCenter.southwest), toAndroidLatLng(londonCenter.northeast));
+            }
+
+            if(londonLatLngBouns != null){
+                mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(londonLatLngBouns, 32), 2000, null);
+            }else{
+                Log.e("MapsActivity_GetBOnPost", "Could not get the london bounds");
+            }
+
         }
     }
 
