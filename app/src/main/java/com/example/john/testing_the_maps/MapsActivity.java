@@ -1,6 +1,9 @@
 package com.example.john.testing_the_maps;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -81,6 +84,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
+        isOnline(this);
         mapFragment.getMapAsync(this);
     }
 
@@ -108,9 +112,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                .setWriteTimeout(1, TimeUnit.SECONDS).setApiKey(ApiKey);
 
         mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+            //Marker originalMarker;
             @Override
             public void onMarkerDragStart(Marker marker) {
-
+                //originalMarker = marker;
             }
 
             @Override
@@ -120,8 +125,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             @Override
             public void onMarkerDragEnd(Marker marker) {
-
+                /*Point newMarker = new Point((float)marker.getPosition().latitude, (float)marker.getPosition().longitude);
+                Polygon londonPolygon = londonBounds.build();
+                if(!londonPolygon.contains(newMarker)){
+                    marker = originalMarker;
+                }*/
             }
+
         });
 
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
@@ -173,17 +183,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         BtnGetDirs.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view){ //the workers will determine which is the origin and which the destination
-                Marker m1 = markers.get(0);
-                m1.setTag(m1.getTitle());
+                if(markers.size() == 2){
+                    if(isOnline(MapsActivity.this)){
+                        Marker m1 = markers.get(0);
+                        m1.setTag(m1.getTitle());
 
-                Marker m2 = markers.get(1);
-                m2.setTag(m2.getTitle());
+                        Marker m2 = markers.get(1);
+                        m2.setTag(m2.getTitle());
 
-                LatLngAdapter lla1 = new LatLngAdapter(m1.getPosition().latitude, m1.getPosition().longitude);
-                LatLngAdapter lla2 = new LatLngAdapter(m2.getPosition().latitude, m2.getPosition().longitude);
+                        LatLngAdapter lla1 = new LatLngAdapter(m1.getPosition().latitude, m1.getPosition().longitude);
+                        LatLngAdapter lla2 = new LatLngAdapter(m2.getPosition().latitude, m2.getPosition().longitude);
 
-                DirectionsRequest request = new DirectionsRequest();
-                request.execute(lla1, lla2);
+                        DirectionsRequest request = new DirectionsRequest();
+                        request.execute(lla1, lla2);
+                    }
+                }else{
+                    Toast.makeText(MapsActivity.this, "You must place two markers", Toast.LENGTH_SHORT).show();
+                }
                 /*com.google.maps.model.LatLng point1 = new com.google.maps.model.LatLng(markers.get(0).getPosition().latitude, markers.get(0).getPosition().longitude);
                 com.google.maps.model.LatLng point2 = new com.google.maps.model.LatLng(markers.get(1).getPosition().latitude, markers.get(1).getPosition().longitude);
                 DirectionsApiRequest request = DirectionsApi.newRequest(context).origin(point1).destination(point2);
@@ -237,6 +253,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private LatLng toAndroidLatLng(com.google.maps.model.LatLng point){
         return new LatLng(point.lat, point.lng);
+    }
+
+    public static boolean isOnline(Context context){
+        ConnectivityManager cm =
+                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        if(netInfo != null && netInfo.isConnected()){
+            return true;
+        }
+        Toast.makeText(context, "Please check your internet connection", Toast.LENGTH_SHORT).show();
+        return false;
     }
 
     private class GetBounds extends AsyncTask<String, Void, ArrayList<LatLng>>{
@@ -365,9 +392,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         protected void onPostExecute(PolylineAdapter polyline) {
-            if(polyline == null || polyline.isEmpy()){
+            if((polyline == null || polyline.isEmpty()) && isOnline(MapsActivity.this)){
                 Log.e("DirectionsRequest_post", "Bad results");
-                Toast.makeText(MapsActivity.this, "Check your internet connection and try again", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MapsActivity.this, "Bad Results!", Toast.LENGTH_SHORT).show();
+            }else if(polyline != null && !polyline.isEmpty() && !isOnline(MapsActivity.this)){
+                Log.e("DirectionsRequest_post", "No internet connection");
+                Toast.makeText(MapsActivity.this, "Please check your internet connection", Toast.LENGTH_SHORT).show();
             }
         }
     }
