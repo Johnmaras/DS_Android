@@ -82,7 +82,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private int olderMarker = 0;
 
     private static File london_file;
-    private static LatLngBounds londonLatLngBouns;
+    private static LatLngBounds londonLatLngBounds;
 
 
     @Override
@@ -366,11 +366,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
 
             if(l != null){
-                londonLatLngBouns = new LatLngBounds(toAndroidLatLng(londonCenter.southwest), toAndroidLatLng(londonCenter.northeast));
+                londonLatLngBounds = new LatLngBounds(toAndroidLatLng(londonCenter.southwest), toAndroidLatLng(londonCenter.northeast));
             }
 
-            if(londonLatLngBouns != null){
-                mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(londonLatLngBouns, 32), 2000, null);
+            if(londonLatLngBounds != null){
+                mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(londonLatLngBounds, 32), 2000, null);
             }else{
                 Log.e("MapsActivity_GetBOnPost", "Could not get the london bounds");
             }
