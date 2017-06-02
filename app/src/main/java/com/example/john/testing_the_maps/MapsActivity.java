@@ -114,28 +114,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                .setWriteTimeout(1, TimeUnit.SECONDS).setApiKey(ApiKey);
 
         mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
-            LatLng originalMarker;
             @Override
-            public void onMarkerDragStart(Marker marker){
-                Log.e("DragStart", "lat = " + marker.getPosition().latitude + " long = " + marker.getPosition().longitude);
-                originalMarker = new LatLng(marker.getPosition().latitude, marker.getPosition().longitude);
+            public void onMarkerDragStart(Marker marker) {
             }
-
             @Override
             public void onMarkerDrag(Marker marker) {}
 
             @Override
             public void onMarkerDragEnd(Marker marker){
-                Log.e("DragEnd", "Marker lat = " + marker.getPosition().latitude + " long = " + marker.getPosition().longitude);
-                Log.e("DragEnd", "Original lat = " + originalMarker.latitude + " long = " + originalMarker.longitude);
-
-                Point newPoint = new Point((float)marker.getPosition().latitude, (float)marker.getPosition().longitude);
-                Polygon londonPolygon = londonBounds.build();
-                if(!londonPolygon.contains(newPoint)){
-                    marker.remove();
-                    LatLng oldPoint = new LatLng(originalMarker.latitude, originalMarker.longitude);
-                    onMapClick(oldPoint);
-                }
             }
 
         });
