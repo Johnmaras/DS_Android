@@ -23,7 +23,7 @@ public class PolylineAdapter{
         points.addAll(point);
     }
 
-    public boolean isEmpy(){
+    public boolean isEmpty(){
         return points.isEmpty();
     }
 }

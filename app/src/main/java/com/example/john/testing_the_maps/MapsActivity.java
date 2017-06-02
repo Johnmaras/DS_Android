@@ -59,7 +59,7 @@ import java.util.concurrent.TimeUnit;
 
 //TODO listen for gps state changes and hide/reveal the my location marker accordingly
 //TODO optimize london_file
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener{
 
     private final String ApiKey = "AIzaSyAa5T-N6-BRrJZSK0xlSrWlTh-C7RjOVdY";
     private final GeoApiContext context = new GeoApiContext();
@@ -106,53 +106,38 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.getUiSettings().setMyLocationButtonEnabled(false);
 
+        mMap.setOnMapClickListener(this);
+
         context.setQueryRateLimit(3)
                .setConnectTimeout(1, TimeUnit.SECONDS)
                .setReadTimeout(1, TimeUnit.SECONDS)
                .setWriteTimeout(1, TimeUnit.SECONDS).setApiKey(ApiKey);
 
         mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
-            //Marker originalMarker;
+            LatLng originalMarker;
             @Override
-            public void onMarkerDragStart(Marker marker) {
-                //originalMarker = marker;
+            public void onMarkerDragStart(Marker marker){
+                Log.e("DragStart", "lat = " + marker.getPosition().latitude + " long = " + marker.getPosition().longitude);
+                originalMarker = new LatLng(marker.getPosition().latitude, marker.getPosition().longitude);
             }
 
             @Override
-            public void onMarkerDrag(Marker marker) {
-
-            }
+            public void onMarkerDrag(Marker marker) {}
 
             @Override
-            public void onMarkerDragEnd(Marker marker) {
-                /*Point newMarker = new Point((float)marker.getPosition().latitude, (float)marker.getPosition().longitude);
+            public void onMarkerDragEnd(Marker marker){
+                Log.e("DragEnd", "Marker lat = " + marker.getPosition().latitude + " long = " + marker.getPosition().longitude);
+                Log.e("DragEnd", "Original lat = " + originalMarker.latitude + " long = " + originalMarker.longitude);
+
+                Point newPoint = new Point((float)marker.getPosition().latitude, (float)marker.getPosition().longitude);
                 Polygon londonPolygon = londonBounds.build();
-                if(!londonPolygon.contains(newMarker)){
-                    marker = originalMarker;
-                }*/
-            }
-
-        });
-
-        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-            @Override
-            public void onMapClick(LatLng latLng){
-                Polygon londonPolygon = londonBounds.build();
-                if(londonPolygon.contains(new Point((float)latLng.latitude, (float)latLng.longitude))) {
-                    if (!markers.isEmpty() && markers.size() == 2) {
-                        markers.get(olderMarker).remove();
-                        markers.remove(olderMarker);
-                    }
-                    options.position(latLng);
-                    options.draggable(true);
-                    options.title((olderMarker + 1 == 1) ? "Origin" : "Destination");
-                    options.snippet("Testing the Maps");
-                    markers.add(olderMarker, mMap.addMarker(options));
-                    olderMarker = olderMarker == 0 ? 1 : 0;
-                }else{
-                    Toast.makeText(MapsActivity.this, "Place a marker inside the London bounds", Toast.LENGTH_SHORT).show();
+                if(!londonPolygon.contains(newPoint)){
+                    marker.remove();
+                    LatLng oldPoint = new LatLng(originalMarker.latitude, originalMarker.longitude);
+                    onMapClick(oldPoint);
                 }
             }
+
         });
 
         final Button btnClearMarkers = (Button) findViewById(R.id.btnClearMarkers);
@@ -265,6 +250,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Toast.makeText(context, "Please check your internet connection", Toast.LENGTH_SHORT).show();
         return false;
     }
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+        Polygon londonPolygon = londonBounds.build();
+        if(londonPolygon.contains(new Point((float)latLng.latitude, (float)latLng.longitude))) {
+            if(!markers.isEmpty() && markers.size() == 2) {
+                markers.get(olderMarker).remove();
+                markers.remove(olderMarker);
+            }
+            options.position(latLng);
+            options.draggable(true);
+            options.title((olderMarker + 1 == 1) ? "Origin" : "Destination");
+            options.snippet("Testing the Maps");
+            markers.add(olderMarker, mMap.addMarker(options));
+            olderMarker = olderMarker == 0 ? 1 : 0;
+        }else{
+            Toast.makeText(MapsActivity.this, "Place a marker inside the London bounds", Toast.LENGTH_SHORT).show();
+        }
+    }
+
 
     private class GetBounds extends AsyncTask<String, Void, ArrayList<LatLng>>{
 
