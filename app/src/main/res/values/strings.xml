@@ -3,5 +3,8 @@
     <string name="title_activity_maps">Map</string>
     <string name="btnClearMarkers">Clear Markers</string>
     <string name="title_activity_settings">Settings</string>
-    <string name="settings_ip">Enter the master\'s IP</string>
+    <string name="settings_ip_edt">Enter the master\'s IP</string>
+    <string name="settings_ip_txtvw">Master IP:</string>
+    <string name="settings_port_edt">Enter the master\'s port</string>
+    <string name="settings_port_txtvw">Master port:</string>
 </resources>

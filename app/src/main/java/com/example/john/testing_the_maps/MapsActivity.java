@@ -61,6 +61,10 @@ import java.util.concurrent.TimeUnit;
 //TODO optimize london_file
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener{
 
+    public static final String MESSAGE_IP = "Testing_the_Maps.IP";
+    public static final String MESSAGE_PORT = "Testing_the_Maps.Port";
+    private static final int REQUEST_CODE = 2610;
+
     private final String ApiKey = "AIzaSyAa5T-N6-BRrJZSK0xlSrWlTh-C7RjOVdY";
     private final GeoApiContext context = new GeoApiContext();
 
@@ -71,6 +75,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private ArrayList<Marker> markers = new ArrayList<>();
     private ArrayList<Polyline> polylines = new ArrayList<>();
     private ArrayList<PolylineOptions> polOptions = new ArrayList<>();
+
+    private static String masterIP;
+    private static int masterPort;
 
     private int olderMarker = 0;
 
@@ -145,7 +152,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View v) {
                 Intent settings = new Intent(v.getContext(), Settings.class);
-                startActivity(settings);
+                settings.putExtra(MESSAGE_IP, masterIP);
+                settings.putExtra(MESSAGE_PORT, masterPort);
+                startActivityForResult(settings, REQUEST_CODE);
             }
         });
 
@@ -213,6 +222,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }*/
             }
         });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+        if (resultCode == RESULT_OK && requestCode == REQUEST_CODE) {
+            if(data.hasExtra(MESSAGE_IP)) {
+                masterIP = data.getExtras().getString(MESSAGE_IP);
+            }else if(data.hasExtra(MESSAGE_PORT)){
+                masterPort = data.getExtras().getInt(MESSAGE_PORT);
+            }
+        }
     }
 
     private void getLondon(){
