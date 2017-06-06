@@ -7,7 +7,7 @@
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context="com.example.john.testing_the_maps.Settings"
     tools:showIn="@layout/activity_settings">
-
+<!-- TODO add the pairs in linear layouts-->
     <TextView
         android:id="@+id/txtvw_masterIP"
         android:layout_width="wrap_content"
@@ -27,10 +27,11 @@
         android:layout_alignBottom="@+id/txtvw_masterIP"
         android:layout_alignStart="@+id/edt_Port"
         android:hint="@string/settings_ip_edt"
+        android:inputType="text"
+        android:ems="9"
         android:selectAllOnFocus="true"
         android:singleLine="true"
-        android:visibility="visible"
-        android:layout_alignEnd="@+id/edt_Port" />
+        android:visibility="visible" />
 
     <TextView
         android:id="@+id/txtvw_masterPort"
@@ -48,10 +49,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBaseline="@+id/txtvw_masterPort"
-        android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
+        android:layout_marginStart="16dp"
         android:layout_toEndOf="@+id/txtvw_masterPort"
         android:hint="@string/settings_port_edt"
+        android:inputType="number"
+        android:ems="9"
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:visibility="visible" />

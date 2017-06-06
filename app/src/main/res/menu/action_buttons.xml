@@ -3,12 +3,15 @@
     android:layout_height="match_parent"
     android:layout_width="wrap_content">
 
+    <!-- xmlns:app is important for identifying the menu res folder -->
+
     <item
         android:id="@+id/btn_tlb_OK"
+        android:title="@string/tlb_ok"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:gravity="end"
         android:icon="@drawable/ic_done_24dp"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="always" />
 
 </menu>

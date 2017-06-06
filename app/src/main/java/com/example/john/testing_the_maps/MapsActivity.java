@@ -228,12 +228,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data){
         if (resultCode == RESULT_OK && requestCode == REQUEST_CODE) {
-            if(data.hasExtra(MESSAGE_IP)) {
-                masterIP = data.getExtras().getString(MESSAGE_IP);
-            }else if(data.hasExtra(MESSAGE_PORT)){
-                masterPort = data.getExtras().getInt(MESSAGE_PORT);
-            }
+            masterIP = data.getExtras().getString(MESSAGE_IP);
+            masterPort = data.getExtras().getInt(MESSAGE_PORT);
         }
+        Toast.makeText(MapsActivity.this, masterIP + " " + masterPort, Toast.LENGTH_SHORT).show();
     }
 
     private void getLondon(){
@@ -260,20 +258,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapClick(LatLng latLng) {
-        Polygon londonPolygon = londonBounds.build();
-        if(londonPolygon.contains(new Point((float)latLng.latitude, (float)latLng.longitude))) {
-            if(!markers.isEmpty() && markers.size() == 2) {
-                markers.get(olderMarker).remove();
-                markers.remove(olderMarker);
+        synchronized(londonBounds) {
+            Polygon londonPolygon = londonBounds.build();
+            if (londonPolygon.contains(new Point((float) latLng.latitude, (float) latLng.longitude))) {
+                if (!markers.isEmpty() && markers.size() == 2) {
+                    markers.get(olderMarker).remove();
+                    markers.remove(olderMarker);
+                }
+                options.position(latLng);
+                options.draggable(true);
+                options.title((olderMarker + 1 == 1) ? "Origin" : "Destination");
+                options.snippet("Testing the Maps");
+                markers.add(olderMarker, mMap.addMarker(options));
+                olderMarker = olderMarker == 0 ? 1 : 0;
+            } else {
+                Toast.makeText(MapsActivity.this, "Place a marker inside the London bounds", Toast.LENGTH_SHORT).show();
             }
-            options.position(latLng);
-            options.draggable(true);
-            options.title((olderMarker + 1 == 1) ? "Origin" : "Destination");
-            options.snippet("Testing the Maps");
-            markers.add(olderMarker, mMap.addMarker(options));
-            olderMarker = olderMarker == 0 ? 1 : 0;
-        }else{
-            Toast.makeText(MapsActivity.this, "Place a marker inside the London bounds", Toast.LENGTH_SHORT).show();
         }
     }
 

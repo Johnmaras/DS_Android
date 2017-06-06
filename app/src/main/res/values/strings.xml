@@ -7,4 +7,5 @@
     <string name="settings_ip_txtvw">Master IP:</string>
     <string name="settings_port_edt">Enter the master\'s port</string>
     <string name="settings_port_txtvw">Master port:</string>
+    <string name="tlb_ok">Done</string>
 </resources>
