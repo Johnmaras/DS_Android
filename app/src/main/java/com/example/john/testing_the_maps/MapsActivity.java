@@ -19,6 +19,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.Dash;
 import com.google.android.gms.maps.model.Gap;
 import com.google.android.gms.maps.model.LatLng;
@@ -58,7 +60,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 //TODO listen for gps state changes and hide/reveal the my location marker accordingly
-//TODO optimize london_file
+//TODO check london file store and retrieval
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener{
 
     public static final String MESSAGE_IP = "Testing_the_Maps.IP";
@@ -181,46 +183,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }else{
                     Toast.makeText(MapsActivity.this, "You must place two markers", Toast.LENGTH_SHORT).show();
                 }
-                /*com.google.maps.model.LatLng point1 = new com.google.maps.model.LatLng(markers.get(0).getPosition().latitude, markers.get(0).getPosition().longitude);
-                com.google.maps.model.LatLng point2 = new com.google.maps.model.LatLng(markers.get(1).getPosition().latitude, markers.get(1).getPosition().longitude);
-                DirectionsApiRequest request = DirectionsApi.newRequest(context).origin(point1).destination(point2);
-
-                DirectionsResult result = new DirectionsResult();
-                try {
-                    result = request.await();
-                } catch (ApiException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                if(result != null){
-                    if(result.routes.length > 0) {
-                        EncodedPolyline encPolyline = result.routes[0].overviewPolyline;
-                        PolylineOptions polylineOptions = new PolylineOptions();
-                        Polyline polyline;
-                        LatLng linePoint = null;
-                        for (com.google.maps.model.LatLng point : encPolyline.decodePath()) {
-                            linePoint = new LatLng(point.lat, point.lng);
-                            polylineOptions.add(linePoint);
-                        }
-                        for (Polyline pol : polylines) {
-                            pol.remove();
-                        }
-                        polylines.clear();
-                        polyline = mMap.addPolyline(polylineOptions);
-                        polOptions.add(polylineOptions);
-                        polylines.add(polyline);
-
-
-                        mMap.moveCamera(CameraUpdateFactory.newLatLng(linePoint));
-                        mMap.animateCamera(CameraUpdateFactory.zoomTo(17), 2000, null);
-                    }
-                }else{
-                    Toast.makeText(MapsActivity.this, "Check your internet connection", Toast.LENGTH_SHORT).show();
-                }*/
             }
         });
     }
@@ -258,6 +220,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapClick(LatLng latLng) {
+        //FIXME crashes if the file is not present(due to connection error or so)
         synchronized(londonBounds) {
             Polygon londonPolygon = londonBounds.build();
             if (londonPolygon.contains(new Point((float) latLng.latitude, (float) latLng.longitude))) {
@@ -271,6 +234,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 options.snippet("Testing the Maps");
                 markers.add(olderMarker, mMap.addMarker(options));
                 olderMarker = olderMarker == 0 ? 1 : 0;
+
+                CircleOptions co = new CircleOptions();
+                co.center(options.getPosition());
+                co.radius(100);
+                mMap.addCircle(co);
+
             } else {
                 Toast.makeText(MapsActivity.this, "Place a marker inside the London bounds", Toast.LENGTH_SHORT).show();
             }
@@ -387,18 +356,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             int i = 0;
             while(masterCon == null && i < 10){
                 try{
-                    //TODO get master ip and port from config file or global variable from the settings activity
-                    masterCon = new Socket(InetAddress.getByName("127.0.0.1"), 4000);
+                    masterCon = new Socket(InetAddress.getByName(masterIP), masterPort);
                     ObjectOutputStream out = new ObjectOutputStream(masterCon.getOutputStream());
                     ObjectInputStream in = new ObjectInputStream(masterCon.getInputStream());
 
                     Message message = new Message();
                     message.setRequestType(9);
 
-                    ArrayList<LatLngAdapter> points = new ArrayList<>();
+                    Coordinates coordinates = new Coordinates(latLngs[0], latLngs[1]);
+
+                    /*ArrayList<LatLngAdapter> points = new ArrayList<>();
                     points.add(latLngs[0]);
-                    points.add(latLngs[1]);
-                    message.setQuery(points);
+                    points.add(latLngs[1]);*/
+                    message.setQuery(coordinates);
 
                     out.writeObject(message);
                     out.flush();
@@ -420,6 +390,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         protected void onPostExecute(PolylineAdapter polyline) {
+            Log.e("TestConnect", "Tried to connect with ip " + masterIP + " and port " + masterPort);
+            Toast.makeText(MapsActivity.this, "Tried to connect with ip " + masterIP + " and port " + masterPort, Toast.LENGTH_SHORT).show();
             if((polyline == null || polyline.isEmpty()) && isOnline(MapsActivity.this)){
                 Log.e("DirectionsRequest_post", "Bad results");
                 Toast.makeText(MapsActivity.this, "Bad Results!", Toast.LENGTH_SHORT).show();
@@ -430,3 +402,44 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 }
+
+/*com.google.maps.model.LatLng point1 = new com.google.maps.model.LatLng(markers.get(0).getPosition().latitude, markers.get(0).getPosition().longitude);
+                com.google.maps.model.LatLng point2 = new com.google.maps.model.LatLng(markers.get(1).getPosition().latitude, markers.get(1).getPosition().longitude);
+                DirectionsApiRequest request = DirectionsApi.newRequest(context).origin(point1).destination(point2);
+
+                DirectionsResult result = new DirectionsResult();
+                try {
+                    result = request.await();
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                if(result != null){
+                    if(result.routes.length > 0) {
+                        EncodedPolyline encPolyline = result.routes[0].overviewPolyline;
+                        PolylineOptions polylineOptions = new PolylineOptions();
+                        Polyline polyline;
+                        LatLng linePoint = null;
+                        for (com.google.maps.model.LatLng point : encPolyline.decodePath()) {
+                            linePoint = new LatLng(point.lat, point.lng);
+                            polylineOptions.add(linePoint);
+                        }
+                        for (Polyline pol : polylines) {
+                            pol.remove();
+                        }
+                        polylines.clear();
+                        polyline = mMap.addPolyline(polylineOptions);
+                        polOptions.add(polylineOptions);
+                        polylines.add(polyline);
+
+
+                        mMap.moveCamera(CameraUpdateFactory.newLatLng(linePoint));
+                        mMap.animateCamera(CameraUpdateFactory.zoomTo(17), 2000, null);
+                    }
+                }else{
+                    Toast.makeText(MapsActivity.this, "Check your internet connection", Toast.LENGTH_SHORT).show();
+                }*/
