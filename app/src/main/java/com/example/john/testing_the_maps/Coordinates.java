@@ -9,4 +9,9 @@ public class Coordinates {
         this.origin = origin;
         this.destination = destination;
     }
+
+    @Override
+    public String toString() {
+        return "origin = " + origin + " destination = " + destination;
+    }
 }
