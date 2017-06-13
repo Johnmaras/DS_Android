@@ -14,7 +14,7 @@ import android.widget.EditText;
 import static com.example.john.testing_the_maps.MapsActivity.MESSAGE_IP;
 import static com.example.john.testing_the_maps.MapsActivity.MESSAGE_PORT;
 
-//FIXME intent results don't return
+//FIXME data readiness
 
 public class Settings extends AppCompatActivity{
 
