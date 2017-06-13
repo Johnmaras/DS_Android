@@ -7,16 +7,16 @@ public class Message implements Serializable{
 
 	private static final long serialVersionUID = 2314160120198237281L;
 	private int requestType;
-	private ArrayList<LatLngAdapter> query;
+	private Coordinates query;
 	private ArrayList<PolylineAdapter> results = new ArrayList<>();
 
-	public Message(int requestType, ArrayList<LatLngAdapter> query, ArrayList<PolylineAdapter> results){
+	public Message(int requestType, Coordinates query, ArrayList<PolylineAdapter> results){
 		this.requestType = requestType;
 		this.query = query;
 		this.results = results;
 	}
 
-	public Message(int requestType, ArrayList<LatLngAdapter> query){
+	public Message(int requestType, Coordinates query){
 		this.requestType = requestType;
 		this.query = query;
 	}
@@ -26,11 +26,11 @@ public class Message implements Serializable{
 		this.query = null;
 	}
 
-	public ArrayList<LatLngAdapter> getQuery() {
+	public Coordinates getQuery() {
 		return query;
 	}
 
-	public void setQuery(ArrayList<LatLngAdapter> query) {
+	public void setQuery(Coordinates query) {
 		this.query = query;
 	}
 
