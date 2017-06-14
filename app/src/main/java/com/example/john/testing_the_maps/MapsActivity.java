@@ -27,8 +27,9 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PatternItem;
 import com.google.android.gms.maps.model.PolygonOptions;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -57,6 +58,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+//based on the TestThePolyline AsyncTask we understand that Serialization is not a feasible way of exchanging data via Sockets.
+//Json on the other hand is platform independent and thus ideal for our purpose.
+//the one polyline gathered from the DataGatherer is valid and the Json Serialization/Deserialization works like a charm
+
 //TODO listen for gps state changes and hide/reveal the my location marker accordingly
 //TODO optimize london_file
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener{
@@ -73,8 +78,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private MarkerOptions options = new MarkerOptions();
     private final Polygon.Builder londonBounds = new Polygon.Builder();
     private ArrayList<Marker> markers = new ArrayList<>();
-    private ArrayList<Polyline> polylines = new ArrayList<>();
-    private ArrayList<PolylineOptions> polOptions = new ArrayList<>();
+    //private ArrayList<Polyline> polylines = new ArrayList<>();
+    //private ArrayList<PolylineOptions> polOptions = new ArrayList<>();
 
     private static String masterIP;
     private static int masterPort;
@@ -94,6 +99,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         isOnline(this);
         mapFragment.getMapAsync(this);
+
     }
 
     /**
@@ -110,6 +116,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
 
         getLondon();
+
+        new TestThePolyline().execute();
 
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.getUiSettings().setMyLocationButtonEnabled(false);
@@ -159,6 +167,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+
+
         final FloatingActionButton BtnGetDirs = (FloatingActionButton) findViewById(R.id.btnGetDirections);
 
         BtnGetDirs.setOnClickListener(new View.OnClickListener() {
@@ -181,6 +191,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }else{
                     Toast.makeText(MapsActivity.this, "You must place two markers", Toast.LENGTH_SHORT).show();
                 }
+
                 /*com.google.maps.model.LatLng point1 = new com.google.maps.model.LatLng(markers.get(0).getPosition().latitude, markers.get(0).getPosition().longitude);
                 com.google.maps.model.LatLng point2 = new com.google.maps.model.LatLng(markers.get(1).getPosition().latitude, markers.get(1).getPosition().longitude);
                 DirectionsApiRequest request = DirectionsApi.newRequest(context).origin(point1).destination(point2);
@@ -243,6 +254,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private LatLng toAndroidLatLng(com.google.maps.model.LatLng point){
         return new LatLng(point.lat, point.lng);
+    }
+
+    private com.google.maps.model.LatLng toLatLng(LatLngAdapter point){
+        return new com.google.maps.model.LatLng(point.getLatitude(), point.getLongitude());
     }
 
     public static boolean isOnline(Context context){
@@ -388,7 +403,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             while(masterCon == null && i < 10){
                 try{
                     //TODO get master ip and port from config file or global variable from the settings activity
-                    masterCon = new Socket(InetAddress.getByName("127.0.0.1"), 4000);
+                    masterCon = new Socket(InetAddress.getByName("192.168.1.67"), 4000);
                     ObjectOutputStream out = new ObjectOutputStream(masterCon.getOutputStream());
                     ObjectInputStream in = new ObjectInputStream(masterCon.getInputStream());
 
@@ -427,6 +442,64 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Log.e("DirectionsRequest_post", "No internet connection");
                 Toast.makeText(MapsActivity.this, "Please check your internet connection", Toast.LENGTH_SHORT).show();
             }
+        }
+    }
+
+    private class TestThePolyline extends AsyncTask<Void, Void, String>{
+
+        @Override
+        protected String doInBackground(Void... params) {
+            Socket masterCon = null;
+            String results = null;
+
+            int i = 0;
+            while(masterCon == null && i < 10){
+                try{
+                    masterCon = new Socket(InetAddress.getByName("192.168.1.67"), 4000);
+                    ObjectInputStream in = new ObjectInputStream(masterCon.getInputStream());
+
+                    /*long size = in.readLong(); //get the length of the file
+                    byte[] fileIn = new byte[(int) size]; //create a byte array
+                    in.readFully(fileIn); //get the bytes of the file
+                    FileOutputStream fos = new FileOutputStream(new File("polyline_example"));
+                    ObjectOutputStream os = new ObjectOutputStream(fos);
+
+                    os.write(fileIn);
+                    os.flush();
+                    os.close();*/
+
+                    results = in.readUTF();
+
+                    /*FileInputStream fis = new FileInputStream(new File("polyline_example"));
+                    ObjectInputStream ois = new ObjectInputStream(fis);*/
+
+
+
+                } catch (UnknownHostException e) {
+                    Log.e("DirectionsRequest_back", "Host not found!");
+                }catch(IOException e){
+                    Log.e("DirectionsRequest_back", "Error on trying to connect to master");
+                }
+
+                i++;
+            }
+            return results;
+        }
+
+        @Override
+        protected void onPostExecute(String polylinesJson){
+
+            GsonBuilder gsonBuilder = new GsonBuilder();
+            gsonBuilder.registerTypeAdapter(PolylineAdapter.class, new PolylineAdapterDeserializer());
+            Gson gson = gsonBuilder.create();
+            //gsonBuilder.setPrettyPrinting();
+
+            PolylineOptions po = new PolylineOptions();
+            PolylineAdapter pl = gson.fromJson(polylinesJson, PolylineAdapter.class);
+            for(LatLngAdapter point: pl.getPoints()){
+                    po.add(toAndroidLatLng(toLatLng(point)));
+            }
+            mMap.addPolyline(po);
         }
     }
 }
