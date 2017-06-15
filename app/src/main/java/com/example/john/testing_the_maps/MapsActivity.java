@@ -31,6 +31,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.maps.GeoApiContext;
@@ -468,7 +469,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     os.flush();
                     os.close();*/
 
-                    results = in.readUTF();
+                    results = (String)in.readObject();
 
                     /*FileInputStream fis = new FileInputStream(new File("polyline_example"));
                     ObjectInputStream ois = new ObjectInputStream(fis);*/
@@ -479,6 +480,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     Log.e("DirectionsRequest_back", "Host not found!");
                 }catch(IOException e){
                     Log.e("DirectionsRequest_back", "Error on trying to connect to master");
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
                 }
 
                 i++;
@@ -494,12 +497,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Gson gson = gsonBuilder.create();
             //gsonBuilder.setPrettyPrinting();
 
-            PolylineOptions po = new PolylineOptions();
-            PolylineAdapter pl = gson.fromJson(polylinesJson, PolylineAdapter.class);
-            for(LatLngAdapter point: pl.getPoints()){
-                    po.add(toAndroidLatLng(toLatLng(point)));
+            JsonParser parser = new JsonParser();
+
+            Object object = parser.parse(polylinesJson);
+            JsonArray objects = ((JsonElement)object).getAsJsonArray();
+
+            //System.err.println(gson);
+
+
+
+            int i = 0;
+            for(Iterator<JsonElement> jit = objects.iterator(); jit.hasNext();){
+                JsonElement jo = jit.next();
+                if(i == 0) {
+                    //System.err.println(jo);
+                    PolylineOptions po = new PolylineOptions();
+                    //JsonObject polyline = jo.getAsJsonObject();
+
+                    //System.err.println(jo.isJsonObject());
+
+                    PolylineAdapter pl = gson.fromJson(jo, PolylineAdapter.class);
+
+                    for (LatLngAdapter point : pl.getPoints()) {
+                        po.add(toAndroidLatLng(toLatLng(point)));
+                    }
+                    mMap.addPolyline(po);
+                }
+                i++;
             }
-            mMap.addPolyline(po);
         }
     }
 }
