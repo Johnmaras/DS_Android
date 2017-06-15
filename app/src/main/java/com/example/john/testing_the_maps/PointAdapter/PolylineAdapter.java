@@ -1,4 +1,4 @@
-package com.example.john.testing_the_maps;
+package com.example.john.testing_the_maps.PointAdapter;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -49,6 +49,11 @@ public class PolylineAdapter implements Serializable{
         this.points.addAll((Collection<? extends LatLngAdapter>) points);
         origin = this.points.get(0);
         destination = this.points.get(this.points.size() - 1);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return this.origin.equals(((PolylineAdapter)obj).getOrigin()) && this.destination.equals(((PolylineAdapter)obj).getDestination());
     }
 
     public boolean isEmpty(){

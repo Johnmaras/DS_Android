@@ -1,4 +1,4 @@
-package com.example.john.testing_the_maps;
+package com.example.john.testing_the_maps.PointAdapter;
 
 import java.io.Serializable;
 

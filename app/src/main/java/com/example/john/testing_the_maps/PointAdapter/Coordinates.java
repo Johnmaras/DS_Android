@@ -1,4 +1,4 @@
-package com.example.john.testing_the_maps;
+package com.example.john.testing_the_maps.PointAdapter;
 
 //TODO override equals
 public class Coordinates{
@@ -26,8 +26,8 @@ public class Coordinates{
         double dest_lat = (int)(destination.getLatitude() * 100) / 100.0;
         double dest_lng = (int)(destination.getLongitude() * 100) / 100.0;
 
-        /*origin = new LatLngAdapter(origin_lat, origin_lng);
-        destination = new LatLngAdapter(dest_lat, dest_lng);*/
+        /*origin = new PointAdapter.LatLngAdapter(origin_lat, origin_lng);
+        destination = new PointAdapter.LatLngAdapter(dest_lat, dest_lng);*/
         return new Coordinates(new LatLngAdapter(origin_lat, origin_lng), new LatLngAdapter(dest_lat, dest_lng));
     }
 
