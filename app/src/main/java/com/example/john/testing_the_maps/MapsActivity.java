@@ -12,6 +12,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.example.john.testing_the_maps.PointAdapter.LatLngAdapter;
+import com.example.john.testing_the_maps.PointAdapter.LatLngAdapterDeserializer;
+import com.example.john.testing_the_maps.PointAdapter.LatLngAdapterSerializer;
+import com.example.john.testing_the_maps.PointAdapter.PolylineAdapter;
+import com.example.john.testing_the_maps.PointAdapter.PolylineAdapterDeserializer;
+import com.example.john.testing_the_maps.PointAdapter.PolylineAdapterSerializer;
 import com.example.john.testing_the_maps.point_in_polygon.Point;
 import com.example.john.testing_the_maps.point_in_polygon.Polygon;
 import com.github.clans.fab.FloatingActionButton;
@@ -118,7 +124,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         getLondon();
 
-        new TestThePolyline().execute();
+        //new TestThePolyline().execute();
 
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.getUiSettings().setMyLocationButtonEnabled(false);
@@ -188,6 +194,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                         DirectionsRequest request = new DirectionsRequest();
                         request.execute(lla1, lla2);
+
+                        /*DataGatherer dataGatherer = new DataGatherer();
+                        dataGatherer.execute(toAndroidLatLng(toLatLng(lla1)), toAndroidLatLng(toLatLng(lla2)));*/
                     }
                 }else{
                     Toast.makeText(MapsActivity.this, "You must place two markers", Toast.LENGTH_SHORT).show();
@@ -394,21 +403,40 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private class DirectionsRequest extends AsyncTask<LatLngAdapter, Integer, PolylineAdapter/*under consideration*/> {
+    private class DirectionsRequest extends AsyncTask<LatLngAdapter, Void, Void> {
         @Override
-        protected PolylineAdapter doInBackground(LatLngAdapter... latLngs) {
+        protected Void doInBackground(LatLngAdapter... latLngs) {
             Socket masterCon = null;
             PolylineAdapter results = null;
 
             int i = 0;
             while(masterCon == null && i < 10){
                 try{
+
+                    GsonBuilder gsonBuilder = new GsonBuilder();
+                    gsonBuilder.registerTypeAdapter(PolylineAdapter.class, new PolylineAdapterDeserializer());
+                    gsonBuilder.registerTypeAdapter(PolylineAdapter.class, new PolylineAdapterSerializer());
+                    gsonBuilder.registerTypeAdapter(LatLngAdapter.class, new LatLngAdapterDeserializer());
+                    gsonBuilder.registerTypeAdapter(LatLngAdapter.class, new LatLngAdapterSerializer());
+                    Gson gson = gsonBuilder.create();
+
                     //TODO get master ip and port from config file or global variable from the settings activity
-                    masterCon = new Socket(InetAddress.getByName("192.168.1.67"), 4000);
+                    masterCon = new Socket(InetAddress.getByName(masterIP), masterPort);
                     ObjectOutputStream out = new ObjectOutputStream(masterCon.getOutputStream());
                     ObjectInputStream in = new ObjectInputStream(masterCon.getInputStream());
 
-                    Message message = new Message();
+                    in.readBoolean();
+
+                    String latLng1 = gson.toJson(latLngs[0]);
+                    String latLng2 = gson.toJson(latLngs[1]);
+
+                    out.writeUTF(latLng1);
+                    out.flush();
+
+                    out.writeUTF(latLng2);
+                    out.flush();
+
+                    /*Message message = new Message();
                     message.setRequestType(9);
 
                     ArrayList<LatLngAdapter> points = new ArrayList<>();
@@ -417,33 +445,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     message.setQuery(points);
 
                     out.writeObject(message);
-                    out.flush();
+                    out.flush();*/
 
-                    results = (PolylineAdapter) in.readObject();
+                    //results = (PolylineAdapter) in.readObject();
 
                 } catch (UnknownHostException e) {
                     Log.e("DirectionsRequest_back", "Host not found!");
                 }catch(IOException e){
                     Log.e("DirectionsRequest_back", "Error on trying to connect to master");
-                } catch (ClassNotFoundException e) {
+                }/* catch (ClassNotFoundException e) {
                     Log.e("DirectionsRequest_back", "Error on trying to read the results");
-                }
+                }*/
 
                 i++;
             }
-            return results;
+            //return results;
+            return null;
         }
 
-        @Override
-        protected void onPostExecute(PolylineAdapter polyline) {
-            if((polyline == null || polyline.isEmpty()) && isOnline(MapsActivity.this)){
+        /*@Override
+        protected void onPostExecute(String polylineJson){
+            if((polylineJson == null || polylineJson.isEmpty()) && isOnline(MapsActivity.this)){
                 Log.e("DirectionsRequest_post", "Bad results");
                 Toast.makeText(MapsActivity.this, "Bad Results!", Toast.LENGTH_SHORT).show();
-            }else if(polyline != null && !polyline.isEmpty() && !isOnline(MapsActivity.this)){
+            }else if(polylineJson != null && !polylineJson.isEmpty() && !isOnline(MapsActivity.this)){
                 Log.e("DirectionsRequest_post", "No internet connection");
                 Toast.makeText(MapsActivity.this, "Please check your internet connection", Toast.LENGTH_SHORT).show();
             }
-        }
+        }*/
     }
 
     private class TestThePolyline extends AsyncTask<Void, Void, String>{
@@ -509,7 +538,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             int i = 0;
             for(Iterator<JsonElement> jit = objects.iterator(); jit.hasNext();){
                 JsonElement jo = jit.next();
-                if(i == 0) {
+                if(true) {
                     //System.err.println(jo);
                     PolylineOptions po = new PolylineOptions();
                     //JsonObject polyline = jo.getAsJsonObject();
@@ -525,6 +554,50 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
                 i++;
             }
+        }
+    }
+
+    private class DataGatherer extends AsyncTask<LatLng, Void, Void>{
+
+        @Override
+        protected Void doInBackground(LatLng... latLngs){
+            Socket workerCon = null;
+
+            int i = 0;
+            while(workerCon == null && i < 10){
+                try{
+                    //TODO get master ip and port from config file or global variable from the settings activity
+                    workerCon = new Socket(InetAddress.getByName("192.168.1.67"), 4000);
+                    ObjectOutputStream out = new ObjectOutputStream(workerCon.getOutputStream());
+                    ObjectInputStream in = new ObjectInputStream(workerCon.getInputStream());
+
+                    LatLng origin = latLngs[0];
+                    out.writeDouble(origin.latitude);
+                    out.flush();
+
+                    out.writeDouble(origin.longitude);
+                    out.flush();
+
+                    in.readBoolean();
+
+                    LatLng dest = latLngs[1];
+                    out.writeDouble(dest.latitude);
+                    out.flush();
+
+                    out.writeDouble(dest.longitude);
+                    out.flush();
+
+
+                    in.readBoolean();
+                } catch (UnknownHostException e) {
+                    Log.e("DirectionsRequest_back", "Host not found!");
+                }catch(IOException e){
+                    Log.e("DirectionsRequest_back", "Error on trying to connect to master");
+                }
+
+                i++;
+            }
+            return null;
         }
     }
 }
