@@ -1,5 +1,8 @@
 package com.example.john.testing_the_maps;
 
+import com.example.john.testing_the_maps.PointAdapter.LatLngAdapter;
+import com.example.john.testing_the_maps.PointAdapter.PolylineAdapter;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 
