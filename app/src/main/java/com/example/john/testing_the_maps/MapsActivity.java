@@ -12,6 +12,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.example.john.testing_the_maps.Messages.Message;
+import com.example.john.testing_the_maps.PointAdapter.Coordinates;
+import com.example.john.testing_the_maps.PointAdapter.CoordinatesDeserializer;
+import com.example.john.testing_the_maps.PointAdapter.CoordinatesSerializer;
 import com.example.john.testing_the_maps.PointAdapter.LatLngAdapter;
 import com.example.john.testing_the_maps.PointAdapter.LatLngAdapterDeserializer;
 import com.example.john.testing_the_maps.PointAdapter.LatLngAdapterSerializer;
@@ -25,6 +29,9 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.Dash;
 import com.google.android.gms.maps.model.Gap;
 import com.google.android.gms.maps.model.LatLng;
@@ -33,6 +40,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PatternItem;
 import com.google.android.gms.maps.model.PolygonOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -85,11 +93,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private MarkerOptions options = new MarkerOptions();
     private final Polygon.Builder londonBounds = new Polygon.Builder();
     private ArrayList<Marker> markers = new ArrayList<>();
-    //private ArrayList<Polyline> polylines = new ArrayList<>();
-    //private ArrayList<PolylineOptions> polOptions = new ArrayList<>();
+    private ArrayList<Polyline> polylines = new ArrayList<>();
+    private ArrayList<Circle> circles = new ArrayList<>();
 
-    private static String masterIP;
-    private static int masterPort;
+    private static String masterIP = "192.168.1.67";
+    private static int masterPort = 4000;
 
     private int olderMarker = 0;
 
@@ -136,31 +144,74 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                .setReadTimeout(1, TimeUnit.SECONDS)
                .setWriteTimeout(1, TimeUnit.SECONDS).setApiKey(ApiKey);
 
+
         mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+            int index;
             @Override
-            public void onMarkerDragStart(Marker marker) {
+            public void onMarkerDragStart(Marker marker){
+                index = markers.indexOf(marker);
+                circles.get(index).remove();
+                circles.remove(index);
             }
             @Override
-            public void onMarkerDrag(Marker marker) {}
+            public void onMarkerDrag(Marker marker) {
+
+            }
 
             @Override
             public void onMarkerDragEnd(Marker marker){
+                CircleOptions co = new CircleOptions();
+                co.center(marker.getPosition());
+                co.radius(1110);
+                circles.add(index, mMap.addCircle(co));
             }
 
         });
 
-        final Button btnClearMarkers = (Button) findViewById(R.id.btnClearMarkers);
+        final Button BtnClearMarkers = (Button) findViewById(R.id.btnClearMarkers);
 
-        btnClearMarkers.setOnClickListener(new View.OnClickListener(){
+        BtnClearMarkers.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
                 for(Marker marker: markers){
                     marker.remove();
                 }
+                for(Circle circle: circles){
+                    circle.remove();
+                }
+                circles.clear();
                 markers.clear();
                 olderMarker = 0;
             }
         });
+
+        final Button BtnClearMap = (Button)findViewById(R.id.btnClearMap);
+
+        BtnClearMap.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                for(Polyline pl: polylines){
+                    pl.remove();
+                }
+                polylines.clear();
+
+                if(markers.isEmpty()){
+                    for(Circle c: circles){
+                        c.remove();
+                    }
+                    circles.clear();
+                }
+            }
+        });
+
+        /*final FloatingActionButton BtnDataGather = (FloatingActionButton) findViewById(R.id.btnDataGather);
+
+        BtnDataGather.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(MapsActivity.this, "Entered manual data gathering mode", Toast.LENGTH_SHORT).show();
+            }
+        });*/
 
         final FloatingActionButton BtnSettings = (FloatingActionButton) findViewById(R.id.btnSettings);
 
@@ -174,8 +225,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-
-
         final FloatingActionButton BtnGetDirs = (FloatingActionButton) findViewById(R.id.btnGetDirections);
 
         BtnGetDirs.setOnClickListener(new View.OnClickListener() {
@@ -184,16 +233,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if(markers.size() == 2){
                     if(isOnline(MapsActivity.this)){
                         Marker m1 = markers.get(0);
-                        m1.setTag(m1.getTitle());
+                        //m1.setTag(m1.getTitle());
 
                         Marker m2 = markers.get(1);
-                        m2.setTag(m2.getTitle());
+                        //m2.setTag(m2.getTitle());
 
-                        LatLngAdapter lla1 = new LatLngAdapter(m1.getPosition().latitude, m1.getPosition().longitude);
-                        LatLngAdapter lla2 = new LatLngAdapter(m2.getPosition().latitude, m2.getPosition().longitude);
+                        LatLngAdapter origin;
+                        LatLngAdapter dest;
+                        if(m1.getTitle().equals("Origin")){
+                            origin = new LatLngAdapter(m1.getPosition().latitude, m1.getPosition().longitude);
+                            dest = new LatLngAdapter(m2.getPosition().latitude, m2.getPosition().longitude);
+                        }else{
+                            dest = new LatLngAdapter(m1.getPosition().latitude, m1.getPosition().longitude);
+                            origin = new LatLngAdapter(m2.getPosition().latitude, m2.getPosition().longitude);
+                        }
 
                         DirectionsRequest request = new DirectionsRequest();
-                        request.execute(lla1, lla2);
+                        request.execute(origin, dest);
 
                         /*DataGatherer dataGatherer = new DataGatherer();
                         dataGatherer.execute(toAndroidLatLng(toLatLng(lla1)), toAndroidLatLng(toLatLng(lla2)));*/
@@ -201,47 +257,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }else{
                     Toast.makeText(MapsActivity.this, "You must place two markers", Toast.LENGTH_SHORT).show();
                 }
-
-                /*com.google.maps.model.LatLng point1 = new com.google.maps.model.LatLng(markers.get(0).getPosition().latitude, markers.get(0).getPosition().longitude);
-                com.google.maps.model.LatLng point2 = new com.google.maps.model.LatLng(markers.get(1).getPosition().latitude, markers.get(1).getPosition().longitude);
-                DirectionsApiRequest request = DirectionsApi.newRequest(context).origin(point1).destination(point2);
-
-                DirectionsResult result = new DirectionsResult();
-                try {
-                    result = request.await();
-                } catch (ApiException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                if(result != null){
-                    if(result.routes.length > 0) {
-                        EncodedPolyline encPolyline = result.routes[0].overviewPolyline;
-                        PolylineOptions polylineOptions = new PolylineOptions();
-                        Polyline polyline;
-                        LatLng linePoint = null;
-                        for (com.google.maps.model.LatLng point : encPolyline.decodePath()) {
-                            linePoint = new LatLng(point.lat, point.lng);
-                            polylineOptions.add(linePoint);
-                        }
-                        for (Polyline pol : polylines) {
-                            pol.remove();
-                        }
-                        polylines.clear();
-                        polyline = mMap.addPolyline(polylineOptions);
-                        polOptions.add(polylineOptions);
-                        polylines.add(polyline);
-
-
-                        mMap.moveCamera(CameraUpdateFactory.newLatLng(linePoint));
-                        mMap.animateCamera(CameraUpdateFactory.zoomTo(17), 2000, null);
-                    }
-                }else{
-                    Toast.makeText(MapsActivity.this, "Check your internet connection", Toast.LENGTH_SHORT).show();
-                }*/
             }
         });
     }
@@ -289,13 +304,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (!markers.isEmpty() && markers.size() == 2) {
                     markers.get(olderMarker).remove();
                     markers.remove(olderMarker);
+                    circles.get(olderMarker).remove();
+                    circles.remove(olderMarker);
                 }
                 options.position(latLng);
                 options.draggable(true);
                 options.title((olderMarker + 1 == 1) ? "Origin" : "Destination");
                 options.snippet("Testing the Maps");
+                //options.alpha(options.getTitle().equals("Origin") ? R.color.Origin: R.color.Destination);
+                options.icon(BitmapDescriptorFactory.defaultMarker(
+                            options.getTitle().equals("Origin") ?
+                                     BitmapDescriptorFactory.HUE_GREEN:
+                                     BitmapDescriptorFactory.HUE_RED));
                 markers.add(olderMarker, mMap.addMarker(options));
+                CircleOptions circleOptions = new CircleOptions();
+                circleOptions.radius(1110);
+                circleOptions.center(markers.get(olderMarker).getPosition());
+                circles.add(olderMarker, mMap.addCircle(circleOptions));
                 olderMarker = olderMarker == 0 ? 1 : 0;
+
             } else {
                 Toast.makeText(MapsActivity.this, "Place a marker inside the London bounds", Toast.LENGTH_SHORT).show();
             }
@@ -403,22 +430,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private class DirectionsRequest extends AsyncTask<LatLngAdapter, Void, Void> {
+    private class DirectionsRequest extends AsyncTask<LatLngAdapter, Void, String> {
+
+        final GsonBuilder gsonBuilder = new GsonBuilder();
+        Gson gson;
+
         @Override
-        protected Void doInBackground(LatLngAdapter... latLngs) {
+        protected String doInBackground(LatLngAdapter... latLngs) {
             Socket masterCon = null;
-            PolylineAdapter results = null;
+            String results = null;
 
             int i = 0;
             while(masterCon == null && i < 10){
                 try{
 
-                    GsonBuilder gsonBuilder = new GsonBuilder();
                     gsonBuilder.registerTypeAdapter(PolylineAdapter.class, new PolylineAdapterDeserializer());
                     gsonBuilder.registerTypeAdapter(PolylineAdapter.class, new PolylineAdapterSerializer());
                     gsonBuilder.registerTypeAdapter(LatLngAdapter.class, new LatLngAdapterDeserializer());
                     gsonBuilder.registerTypeAdapter(LatLngAdapter.class, new LatLngAdapterSerializer());
-                    Gson gson = gsonBuilder.create();
+                    gsonBuilder.registerTypeAdapter(Coordinates.class, new CoordinatesDeserializer());
+                    gsonBuilder.registerTypeAdapter(Coordinates.class, new CoordinatesSerializer());
+                    gson = gsonBuilder.create();
 
                     //TODO get master ip and port from config file or global variable from the settings activity
                     masterCon = new Socket(InetAddress.getByName(masterIP), masterPort);
@@ -427,16 +459,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     in.readBoolean();
 
-                    String latLng1 = gson.toJson(latLngs[0]);
+                    Coordinates query = new Coordinates(latLngs[0], latLngs[1]);
+                    Message message = new Message(9, query);
+                    String messageJson = gson.toJson(message, Message.class);
+                    System.out.println(messageJson);
+
+                    out.writeObject(messageJson);
+                    out.flush();
+
+                    results = (String)in.readObject();
+
+                    /*String latLng1 = gson.toJson(latLngs[0]);
                     String latLng2 = gson.toJson(latLngs[1]);
 
                     out.writeUTF(latLng1);
                     out.flush();
 
                     out.writeUTF(latLng2);
-                    out.flush();
+                    out.flush();*/
 
-                    /*Message message = new Message();
+                    /*com.example.john.testing_the_maps.Message message = new com.example.john.testing_the_maps.Message();
                     message.setRequestType(9);
 
                     ArrayList<LatLngAdapter> points = new ArrayList<>();
@@ -447,20 +489,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     out.writeObject(message);
                     out.flush();*/
 
-                    //results = (PolylineAdapter) in.readObject();
 
                 } catch (UnknownHostException e) {
                     Log.e("DirectionsRequest_back", "Host not found!");
                 }catch(IOException e){
                     Log.e("DirectionsRequest_back", "Error on trying to connect to master");
-                }/* catch (ClassNotFoundException e) {
+                } catch (ClassNotFoundException e) {
                     Log.e("DirectionsRequest_back", "Error on trying to read the results");
-                }*/
+                }
 
                 i++;
             }
             //return results;
-            return null;
+            return results;
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            if(!s.isEmpty()){
+                PolylineAdapter polylineAdapter = gson.fromJson(s, PolylineAdapter.class);
+                PolylineOptions polylineOptions = new PolylineOptions();
+                for(LatLngAdapter point : polylineAdapter.getPoints()){
+                    polylineOptions.add(toAndroidLatLng(toLatLng(point)));
+                }
+                polylines.add(mMap.addPolyline(polylineOptions));
+            }
         }
 
         /*@Override
