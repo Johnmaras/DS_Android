@@ -19,8 +19,15 @@
         android:text="@string/btnClearMarkers"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"/>
+
+    <Button
+        android:id="@+id/btnClearMap"
+        android:text="@string/btnClearMap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@+id/btnClearMarkers"/>
 
     <com.github.clans.fab.FloatingActionMenu
         android:layout_width="wrap_content"
@@ -31,6 +38,15 @@
         android:layout_marginBottom="24dp"
         map:menu_colorNormal="@color/colorPrimaryDark"
         map:menu_colorRipple="@color/colorAccent">
+
+        <!--<com.github.clans.fab.FloatingActionButton
+            android:id="@+id/btnDataGather"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            map:fab_colorNormal="@color/colorPrimaryDark"
+            map:fab_colorRipple="@color/colorAccent"
+            android:src="@drawable/ic_add_location_24dp" />-->
 
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/btnSettings"
@@ -49,7 +65,6 @@
             map:fab_colorNormal="@color/colorPrimaryDark"
             map:fab_colorRipple="@color/colorAccent"
             android:src="@drawable/ic_directions_white_36px" />
-
 
     </com.github.clans.fab.FloatingActionMenu>
 

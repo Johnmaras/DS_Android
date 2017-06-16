@@ -1,7 +1,11 @@
-package com.example.john.testing_the_maps;
+package com.example.john.testing_the_maps.Messages;
+
+import com.example.john.testing_the_maps.PointAdapter.Coordinates;
+import com.example.john.testing_the_maps.PointAdapter.PolylineAdapter;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 
 public class Message implements Serializable{
 
@@ -46,8 +50,8 @@ public class Message implements Serializable{
 		return results;
 	}
 
-	public void setResults(ArrayList<PolylineAdapter> results) {
-		this.results = results;
+	public void setResults(Collection<PolylineAdapter> results) {
+		this.results.addAll(results);
 	}
 
 	public void setResults(PolylineAdapter results){
