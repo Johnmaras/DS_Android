@@ -506,7 +506,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         protected void onPostExecute(String s) {
-            if(!s.isEmpty()){
+            if(s != null && !s.isEmpty()){
                 PolylineAdapter polylineAdapter = gson.fromJson(s, PolylineAdapter.class);
                 PolylineOptions polylineOptions = new PolylineOptions();
                 for(LatLngAdapter point : polylineAdapter.getPoints()){
