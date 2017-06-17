@@ -96,8 +96,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private ArrayList<Polyline> polylines = new ArrayList<>();
     private ArrayList<Circle> circles = new ArrayList<>();
 
-    private static String masterIP = "192.168.1.67";
-    private static int masterPort = 4000;
+    private static String masterIP = null;
+    private static int masterPort = 0;
 
     private int olderMarker = 0;
 
@@ -162,7 +162,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onMarkerDragEnd(Marker marker){
                 CircleOptions co = new CircleOptions();
                 co.center(marker.getPosition());
-                co.radius(1110);
+                co.radius(555);
                 circles.add(index, mMap.addCircle(co));
             }
 
@@ -187,9 +187,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         final Button BtnClearMap = (Button)findViewById(R.id.btnClearMap);
 
-        BtnClearMap.setOnClickListener(new View.OnClickListener() {
+        BtnClearMap.setOnClickListener(new View.OnClickListener(){
             @Override
-            public void onClick(View v) {
+            public void onClick(View v){
                 for(Polyline pl: polylines){
                     pl.remove();
                 }
@@ -300,8 +300,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapClick(LatLng latLng) {
         synchronized(londonBounds) {
             Polygon londonPolygon = londonBounds.build();
-            if (londonPolygon.contains(new Point((float) latLng.latitude, (float) latLng.longitude))) {
-                if (!markers.isEmpty() && markers.size() == 2) {
+            if(londonPolygon.contains(new Point((float) latLng.latitude, (float) latLng.longitude))) {
+                if(!markers.isEmpty() && markers.size() == 2){
                     markers.get(olderMarker).remove();
                     markers.remove(olderMarker);
                     circles.get(olderMarker).remove();
@@ -318,7 +318,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                      BitmapDescriptorFactory.HUE_RED));
                 markers.add(olderMarker, mMap.addMarker(options));
                 CircleOptions circleOptions = new CircleOptions();
-                circleOptions.radius(1110);
+                circleOptions.radius(555);
                 circleOptions.center(markers.get(olderMarker).getPosition());
                 circles.add(olderMarker, mMap.addCircle(circleOptions));
                 olderMarker = olderMarker == 0 ? 1 : 0;

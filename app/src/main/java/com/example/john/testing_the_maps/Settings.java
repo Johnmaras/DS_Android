@@ -74,8 +74,11 @@ public class Settings extends AppCompatActivity{
 
                 try{
                     String[] ip_octets = s.toString().trim().split("\\.");
-                    if(ip_octets.length > 4) throw new NumberFormatException();
-                    for (String octet : ip_octets){
+                    if(ip_octets.length > 4){
+                        ip_ok = false;
+                        throw new NumberFormatException();
+                    }
+                    for(String octet : ip_octets){
                         int number = Integer.parseInt(octet);
                         if(number < 0 || number > 255){
                             ip_ok = false;
@@ -88,6 +91,7 @@ public class Settings extends AppCompatActivity{
                 }catch(NumberFormatException e){
                     ((EditText) findViewById(R.id.edt_IP)).setTextColor(Color.RED);
                 }
+
             }
 
             @Override
