@@ -14,11 +14,7 @@ import android.widget.EditText;
 import static com.example.john.testing_the_maps.MapsActivity.MESSAGE_IP;
 import static com.example.john.testing_the_maps.MapsActivity.MESSAGE_PORT;
 
-//FIXME data readiness
-
 public class Settings extends AppCompatActivity{
-
-    //private static final int REQUEST_CODE = 2610;
 
     private static MenuItem okButton;
 
@@ -26,19 +22,11 @@ public class Settings extends AppCompatActivity{
     private static int master_port;
 
     private static boolean ip_ok;
-    private static boolean port_ok ;
+    private static boolean port_ok;
 
     private static boolean dataOk(){
         return ip_ok && port_ok;
     }
-
-    /*private static void setIp_ok(boolean value){
-        ip_ok = value;
-    }
-
-    private static void setPort_ok(boolean value){
-        port_ok = value;
-    }*/
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
@@ -46,8 +34,6 @@ public class Settings extends AppCompatActivity{
         setContentView(R.layout.activity_settings);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        //final View okButton = getOkButton(toolbar);
 
         ip_ok = false;
         port_ok = false;
@@ -59,8 +45,6 @@ public class Settings extends AppCompatActivity{
         final EditText Edt_IP = (EditText)findViewById(R.id.edt_IP);
         if(hint_ip != null && !hint_ip.isEmpty()) Edt_IP.setHint(hint_ip);
 
-        //if(dataOk()) findViewById(R.id.btn_tlb_OK).setEnabled(true);
-
         Edt_IP.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -69,8 +53,6 @@ public class Settings extends AppCompatActivity{
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count){
-
-                if(dataOk()) okButton.setEnabled(true);
 
                 try{
                     String[] ip_octets = s.toString().trim().split("\\.");
@@ -92,6 +74,11 @@ public class Settings extends AppCompatActivity{
                     ((EditText) findViewById(R.id.edt_IP)).setTextColor(Color.RED);
                 }
 
+                if(dataOk()) {
+                    okButton.setEnabled(true);
+                }else{
+                    okButton.setEnabled(false);
+                }
             }
 
             @Override
@@ -111,8 +98,6 @@ public class Settings extends AppCompatActivity{
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
 
-                if(dataOk()) okButton.setEnabled(true);
-
                 try{
                     if(!s.equals("")){
                         int p_num = Integer.parseInt(s.toString());
@@ -123,9 +108,17 @@ public class Settings extends AppCompatActivity{
                             port_ok = true;
                             Edt_Port.setTextColor(Color.BLACK);
                         }
+                    }else{
+                        port_ok = false;
                     }
                 }catch (NumberFormatException e){
                     Edt_Port.setTextColor(Color.RED);
+                }
+
+                if(dataOk()) {
+                    okButton.setEnabled(true);
+                }else{
+                    okButton.setEnabled(false);
                 }
             }
 
@@ -146,30 +139,11 @@ public class Settings extends AppCompatActivity{
         });
     }
 
-    /*private static View getOkButton(Toolbar toolbar){
-        View view = toolbar.getChildAt(1);
-
-        Log.e("Class", view.getClass().toString());
-
-        if (view instanceof ActionMenuView) {
-            ActionMenuView menuView = (ActionMenuView) view;
-
-            ActionMenuItemView itemView = (ActionMenuItemView) menuView.getChildAt(0);
-            return itemView;
-        }
-        return null;
-    }*/
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.action_buttons, menu);
         okButton = menu.findItem(R.id.btn_tlb_OK).setEnabled(false);
-        //Log.e("ClassIs", Integer.toString(okButton.getItemId()));
-        /*if(ok instanceof MenuItemImpl){
-            Log.e("ClassIs", ok.getClass().toString());
-        }*/
-
         return true;
     }
 
